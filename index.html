@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AI 闯关乐园 - 学习助手</title>
+    <!-- iOS Web App Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AI闯关乐园">
+    <!-- Inline Apple Touch Icon (High Quality SVG) -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234f46e5'/><circle cx='50' cy='45' r='25' fill='white' opacity='0.2'/><path d='M35 40 L50 25 L65 40 L50 55 Z' fill='white'/><path d='M30 60 Q50 50 70 60 L70 75 Q50 65 30 75 Z' fill='white' opacity='0.8'/></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* 字体优化：优先加载系统圆体字族 */
+        body { 
+            background-color: #F8FDFF; 
+            /* 极浅灰色网格背景 */
+            background-image: 
+                linear-gradient(rgba(226, 232, 240, 0.3) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(226, 232, 240, 0.3) 1px, transparent 1px);
+            background-size: 30px 30px;
+            font-family: 'Yuanti SC', 'STZhongsong', 'Microsoft YaHei', 'SimHei', sans-serif; 
+            overflow: hidden; 
+            color: #1e293b;
+            -webkit-font-smoothing: antialiased;
+            /* 移动端优化 */
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: none;
+            /* iOS Safe Area 适配 */
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+        /* 修复移动端 100vh 问题 */
+        .h-screen-fix { height: 100vh; height: calc(var(--vh, 1vh) * 100); }
+        .font-cartoon { 
+            font-family: 'Yuanti SC', 'STZhongsong', 'Microsoft YaHei', cursive; 
+            font-weight: 900;
+        }
+        
+        .mesh-gradient { 
+            background: radial-gradient(at 0% 0%, rgba(204, 251, 241, 0.9) 0, transparent 50%), 
+                        radial-gradient(at 100% 0%, rgba(224, 247, 250, 0.9) 0, transparent 50%), 
+                        #f0fdfa; 
+        }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+        .animate-shake { animation: shake 0.2s ease-in-out 2; }
+        
+        @keyframes bounce-subtle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+        .animate-bounce-subtle { animation: bounce-subtle 4s infinite ease-in-out; }
+
+        /* MG动画定义 */
+        @keyframes mg-float {
+            0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+            33% { transform: translateY(-10px) rotate(5deg) scale(1.05); }
+            66% { transform: translateY(5px) rotate(-5deg) scale(0.95); }
+        }
+        .animate-mg { animation: mg-float 6s infinite ease-in-out; }
+        
+        @keyframes pulse-soft {
+            0%, 100% { transform: scale(1); opacity: 0.4; }
+            50% { transform: scale(1.1); opacity: 0.6; }
+        }
+        .animate-pulse-soft { animation: pulse-soft 4s infinite ease-in-out; }
+
+        .transition-all { transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .lucide { width: 1.5rem; height: 1.5rem; stroke-width: 2.5px; }
+
+        /* 卡通 Dock 栏样式 */
+        .cartoon-dock {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            border: 4px solid #fff;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.06), inset 0 0 20px rgba(255,255,255,0.5);
+            border-radius: 9999px;
+        }
+
+        .bubble-btn {
+            box-shadow: 0 8px 0 rgba(0,0,0,0.04);
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .bubble-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 4px 0 rgba(0,0,0,0.04);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #4f46e5, #9333ea, #db2777);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* SVG 动画增强 */
+        .svg-float { animation: bounce-subtle 5s infinite ease-in-out; }
+        .svg-float-delayed { animation: bounce-subtle 6s infinite ease-in-out 1.5s; }
+        .svg-sway { animation: sway 4s infinite ease-in-out; }
+        @keyframes sway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+    </style>
+</head>
+<body class="h-screen-fix flex flex-col p-2 md:p-4 select-none relative">
+
+    <!-- Cartoon Background Elements -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0 opacity-60 md:opacity-80">
+        <!-- Fine Grid is now in CSS body background -->
+
+        <!-- Palette -->
+        <svg class="absolute top-[10%] left-[3%] w-12 h-12 animate-mg opacity-70" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="45" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2" />
+            <circle cx="35" cy="35" r="8" fill="#f43f5e" />
+            <circle cx="65" cy="35" r="8" fill="#fbbf24" />
+            <circle cx="35" cy="65" r="8" fill="#3b82f6" />
+            <circle cx="65" cy="65" r="8" fill="#22c55e" />
+            <path d="M50 45 Q55 50 50 55" stroke="#94a3b8" stroke-width="3" fill="none" stroke-linecap="round" />
+        </svg>
+
+        <!-- Pencil -->
+        <svg class="absolute top-[5%] left-[25%] w-10 h-10 animate-mg opacity-70" viewBox="0 0 100 100">
+            <path d="M20 80 L30 60 L70 20 L80 30 L40 70 Z" fill="#fbbf24" />
+            <path d="M70 20 L80 30 L85 25 L75 15 Z" fill="#f43f5e" />
+            <path d="M20 80 L30 85 L30 60 Z" fill="#451a03" />
+            <rect x="35" y="55" width="30" height="4" fill="#d97706" transform="rotate(-45 50 50)" />
+        </svg>
+
+        <!-- Blackboard -->
+        <svg class="absolute top-[22%] left-[12%] w-14 h-14 svg-float-delayed opacity-70" viewBox="0 0 100 100">
+            <rect x="10" y="20" width="80" height="50" rx="5" fill="#334155" stroke="#94a3b8" stroke-width="4" />
+            <path d="M20 35 L40 35 M20 45 L50 45 M20 55 L35 55" stroke="white" stroke-width="3" stroke-linecap="round" />
+            <circle cx="75" cy="55" r="5" fill="#fbbf24" opacity="0.9" />
+        </svg>
+
+        <!-- Computer -->
+        <svg class="absolute top-[15%] right-[8%] w-14 h-14 svg-float opacity-70" viewBox="0 0 100 100">
+            <rect x="15" y="15" width="70" height="50" rx="8" fill="#f1f5f9" stroke="#94a3b8" stroke-width="3" />
+            <rect x="22" y="22" width="56" height="36" rx="4" fill="#4f46e5" />
+            <rect x="35" y="65" width="30" height="8" rx="2" fill="#cbd5e1" />
+            <rect x="20" y="73" width="60" height="4" rx="2" fill="#94a3b8" />
+            <circle cx="50" cy="40" r="4" fill="white" opacity="0.4" />
+        </svg>
+
+        <!-- Books -->
+        <svg class="absolute top-[45%] left-[2%] w-10 h-10 svg-sway opacity-80" viewBox="0 0 100 100">
+            <rect x="20" y="20" width="40" height="60" rx="4" fill="#f43f5e" transform="rotate(-15 40 50)" />
+            <rect x="35" y="20" width="40" height="60" rx="4" fill="#3b82f6" />
+            <path d="M35 30 L75 30 M35 40 L75 40 M35 50 L75 50" stroke="white" stroke-width="3" opacity="0.5" />
+        </svg>
+
+        <!-- Ruler -->
+        <svg class="absolute top-[48%] right-[3%] w-12 h-12 svg-float-delayed opacity-70" viewBox="0 0 100 100">
+            <rect x="10" y="40" width="80" height="20" rx="2" fill="#fbbf24" stroke="#d97706" stroke-width="2" transform="rotate(25 50 50)" />
+            <path d="M20 45 V55 M30 45 V55 M40 45 V55 M50 45 V55 M60 45 V55 M70 45 V55 M80 45 V55" stroke="#d97706" stroke-width="2" transform="rotate(25 50 50)" />
+        </svg>
+
+        <!-- Globe -->
+        <svg class="absolute bottom-[18%] left-[15%] w-16 h-16 svg-float opacity-80" viewBox="0 0 100 100">
+            <circle cx="50" cy="45" r="35" fill="#3b82f6" stroke="#1d4ed8" stroke-width="3" />
+            <path d="M30 30 Q50 20 70 30 M25 45 Q50 35 75 45 M30 60 Q50 70 70 60" stroke="white" stroke-width="2" fill="none" opacity="0.6" />
+            <path d="M50 80 V90 M30 90 H70" stroke="#64748b" stroke-width="5" stroke-linecap="round" />
+        </svg>
+
+        <!-- Magnifying Glass -->
+        <svg class="absolute bottom-[28%] right-[18%] w-10 h-10 animate-mg opacity-70" viewBox="0 0 100 100">
+            <circle cx="45" cy="45" r="30" fill="none" stroke="#64748b" stroke-width="6" />
+            <path d="M65 65 L85 85" stroke="#64748b" stroke-width="12" stroke-linecap="round" />
+            <circle cx="45" cy="45" r="22" fill="#7dd3fc" opacity="0.6" />
+        </svg>
+
+        <!-- Star -->
+        <svg class="absolute top-[38%] right-[35%] w-12 h-12 svg-float-delayed opacity-80" viewBox="0 0 100 100">
+            <path d="M50 5 L63 35 L95 40 L72 63 L78 95 L50 80 L22 95 L28 63 L5 40 L37 35 Z" fill="#fbbf24" stroke="#f59e0b" stroke-width="3" stroke-linejoin="round" />
+            <circle cx="40" cy="50" r="3.5" fill="#92400e" />
+            <circle cx="60" cy="50" r="3.5" fill="#92400e" />
+            <circle cx="35" cy="58" r="6" fill="#fca5a5" opacity="0.8" />
+            <circle cx="65" cy="58" r="6" fill="#fca5a5" opacity="0.8" />
+            <path d="M46 68 Q50 72 54 68" stroke="#92400e" stroke-width="2.5" fill="none" stroke-linecap="round" />
+        </svg>
+
+        <!-- Lamp -->
+        <svg class="absolute top-[8%] right-[45%] w-10 h-10 animate-mg opacity-60" viewBox="0 0 100 100">
+            <path d="M30 80 H70 L60 40 H40 Z" fill="#fbbf24" stroke="#d97706" stroke-width="2" />
+            <rect x="45" y="80" width="10" height="15" fill="#94a3b8" />
+            <circle cx="50" cy="30" r="15" fill="#fef3c7" opacity="0.8" />
+            <path d="M50 15 V45 M35 30 H65" stroke="#f59e0b" stroke-width="2" opacity="0.6" />
+        </svg>
+
+        <!-- Calculator -->
+        <svg class="absolute bottom-[40%] left-[28%] w-12 h-12 svg-float opacity-70" viewBox="0 0 100 100">
+            <rect x="20" y="20" width="60" height="70" rx="5" fill="#cbd5e1" stroke="#94a3b8" stroke-width="3" />
+            <rect x="28" y="28" width="44" height="15" rx="2" fill="#334155" />
+            <rect x="30" y="50" width="10" height="8" rx="1" fill="#6366f1" />
+            <rect x="45" y="50" width="10" height="8" rx="1" fill="#6366f1" />
+            <rect x="60" y="50" width="10" height="8" rx="1" fill="#6366f1" />
+            <rect x="30" y="65" width="10" height="8" rx="1" fill="#6366f1" />
+            <rect x="45" y="65" width="10" height="8" rx="1" fill="#6366f1" />
+            <rect x="60" y="65" width="10" height="8" rx="1" fill="#6366f1" />
+        </svg>
+
+        <!-- Paper Clip -->
+        <svg class="absolute bottom-[32%] right-[42%] w-8 h-8 animate-mg opacity-60" viewBox="0 0 100 100">
+            <path d="M30 40 V70 Q30 85 45 85 Q60 85 60 70 V30 Q60 15 45 15 Q30 15 30 30 V60" stroke="#94a3b8" stroke-width="6" fill="none" stroke-linecap="round" />
+        </svg>
+
+        <!-- Microscope (New) -->
+        <svg class="absolute top-[35%] left-[35%] w-10 h-10 animate-mg opacity-60" viewBox="0 0 100 100">
+            <path d="M40 80 H60 M50 80 V60 M50 60 Q70 60 70 40 V20 H40" stroke="#94a3b8" stroke-width="5" fill="none" />
+            <circle cx="55" cy="30" r="5" fill="#6366f1" />
+        </svg>
+
+        <!-- Paint Brush (New) -->
+        <svg class="absolute bottom-[55%] right-[28%] w-10 h-10 svg-float opacity-70" viewBox="0 0 100 100">
+            <rect x="45" y="40" width="10" height="45" rx="2" fill="#b45309" />
+            <path d="M40 20 Q50 10 60 20 V40 H40 Z" fill="#fbbf24" />
+        </svg>
+
+        <!-- Protractor (New) -->
+        <svg class="absolute top-[65%] left-[28%] w-12 h-12 svg-float-delayed opacity-65" viewBox="0 0 100 100">
+            <path d="M20 70 A30 30 0 0 1 80 70 H20" fill="none" stroke="#22c55e" stroke-width="4" />
+            <path d="M50 70 V65 M35 68 V63 M65 68 V63" stroke="#22c55e" stroke-width="2" />
+        </svg>
+
+        <!-- Bottom Stacked Cartoon Row - Extremely Kawaii & Exquisite -->
+        <div class="absolute bottom-0 left-0 right-0 h-56 flex justify-center items-end px-4 overflow-visible pointer-events-none opacity-100">
+            <div class="flex items-end -space-x-10 md:-space-x-16 mb-[-10px] overflow-visible">
+                
+                <!-- Kawaii Rabbit -->
+                <svg class="w-20 h-20 md:w-32 md:h-32 z-0 svg-sway overflow-visible" viewBox="0 0 100 100">
+                    <path d="M30 40 Q20 10 35 10 Q50 10 45 40" fill="#fecaca" stroke="#f87171" stroke-width="1.5" />
+                    <path d="M70 40 Q80 10 65 10 Q50 10 55 40" fill="#fecaca" stroke="#f87171" stroke-width="1.5" />
+                    <circle cx="50" cy="65" r="30" fill="white" stroke="#e2e8f0" stroke-width="1.5" />
+                    <circle cx="40" cy="60" r="3.5" fill="#1e293b" />
+                    <circle cx="60" cy="60" r="3.5" fill="#1e293b" />
+                    <circle cx="38" cy="58" r="1" fill="white" opacity="0.6" />
+                    <circle cx="58" cy="58" r="1" fill="white" opacity="0.6" />
+                    <circle cx="35" cy="68" r="6" fill="#fda4af" opacity="0.5" />
+                    <circle cx="65" cy="68" r="6" fill="#fda4af" opacity="0.5" />
+                    <path d="M48 72 Q50 75 52 72" stroke="#fda4af" stroke-width="2.5" fill="none" stroke-linecap="round" />
+                </svg>
+
+                <!-- Kawaii Elephant (Larger) -->
+                <svg class="w-36 h-36 md:w-56 md:h-56 z-10 transition-all overflow-visible -ml-4" viewBox="0 0 100 100">
+                    <path d="M30 85 Q15 85 15 55 Q15 25 55 25 Q95 25 95 55 Q95 85 80 85" fill="#94a3b8" />
+                    <path d="M32 83 Q18 83 18 57 Q18 28 55 28 Q92 28 92 57 Q92 83 78 83" fill="#cbd5e1" />
+                    <path d="M20 50 Q0 50 0 30 Q0 10 25 15" fill="#94a3b8" />
+                    <circle cx="65" cy="48" r="5" fill="#1e293b" />
+                    <circle cx="85" cy="48" r="5" fill="#1e293b" />
+                    <circle cx="63" cy="46" r="1.5" fill="white" opacity="0.7" />
+                    <circle cx="83" cy="46" r="1.5" fill="white" opacity="0.7" />
+                    <circle cx="60" cy="58" r="8" fill="#fca5a5" opacity="0.6" />
+                    <circle cx="90" cy="58" r="8" fill="#fca5a5" opacity="0.6" />
+                    <path d="M78 65 Q78 92 55 92" stroke="#94a3b8" stroke-width="12" fill="none" stroke-linecap="round" />
+                    <path d="M57 92 Q50 92 50 85" stroke="#cbd5e1" stroke-width="4" fill="none" stroke-linecap="round" />
+                </svg>
+
+                <!-- Basketball (New Small Element) -->
+                <svg class="w-14 h-14 md:w-20 md:h-20 z-15 -ml-6 mb-2 animate-bounce overflow-visible" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" fill="#f97316" stroke="#c2410c" stroke-width="2" />
+                    <path d="M10 50 H90 M50 10 V90 M20 20 Q50 50 80 80 M20 80 Q50 50 80 20" stroke="#c2410c" stroke-width="2.5" fill="none" />
+                </svg>
+
+                <!-- Kawaii Lion -->
+                <svg class="w-28 h-28 md:w-46 md:h-46 z-20 -ml-12 overflow-visible" viewBox="0 0 100 100">
+                    <path d="M50 2 A48 48 0 1 0 50 98 A48 48 0 1 0 50 2" fill="#fbbf24" stroke="#d97706" stroke-width="1" />
+                    <circle cx="50" cy="54" r="36" fill="#fef3c7" stroke="#fde68a" stroke-width="1" />
+                    <circle cx="40" cy="48" r="4" fill="#451a03" />
+                    <circle cx="60" cy="48" r="4" fill="#451a03" />
+                    <circle cx="38" cy="46" r="1.5" fill="white" opacity="0.6" />
+                    <circle cx="58" cy="46" r="1.5" fill="white" opacity="0.6" />
+                    <circle cx="35" cy="58" r="8" fill="#fca5a5" opacity="0.6" />
+                    <circle cx="65" cy="58" r="8" fill="#fca5a5" opacity="0.6" />
+                    <path d="M46 65 Q50 72 54 65" stroke="#451a03" stroke-width="3" fill="none" stroke-linecap="round" />
+                    <path d="M25 25 Q15 25 15 40" stroke="#fbbf24" stroke-width="10" fill="none" stroke-linecap="round" />
+                    <path d="M75 25 Q85 25 85 40" stroke="#fbbf24" stroke-width="10" fill="none" stroke-linecap="round" />
+                </svg>
+
+                <!-- Tiny Kawaii Ant -->
+                <svg class="w-10 h-10 md:w-14 md:h-14 z-25 -ml-4 mb-1 animate-mg overflow-visible" viewBox="0 0 100 100">
+                    <circle cx="30" cy="60" r="10" fill="#334155" />
+                    <circle cx="50" cy="60" r="12" fill="#334155" />
+                    <circle cx="70" cy="55" r="15" fill="#334155" />
+                    <path d="M65 45 Q70 30 80 35" stroke="#334155" stroke-width="2" fill="none" />
+                    <path d="M75 45 Q80 30 90 35" stroke="#334155" stroke-width="2" fill="none" />
+                    <circle cx="75" cy="50" r="2" fill="white" />
+                    <circle cx="85" cy="50" r="2" fill="white" />
+                </svg>
+
+                <!-- Kawaii Owl (Extra Large) -->
+                <svg class="w-40 h-40 md:w-64 md:h-64 z-30 -mb-2 overflow-visible" viewBox="0 0 100 100">
+                    <path d="M10 50 Q10 10 50 10 Q90 10 90 50 Q90 95 50 95 Q10 95 10 50" fill="#4f46e5" />
+                    <path d="M15 50 Q15 15 50 15 Q85 15 85 50 Q85 90 50 90 Q15 90 15 50" fill="#6366f1" />
+                    <circle cx="33" cy="42" r="20" fill="white" />
+                    <circle cx="67" cy="42" r="20" fill="white" />
+                    <circle cx="33" cy="42" r="9" fill="#1e1b4b" />
+                    <circle cx="67" cy="42" r="9" fill="#1e1b4b" />
+                    <circle cx="31" cy="39" r="3" fill="white" opacity="0.5" />
+                    <circle cx="65" cy="39" r="3" fill="white" opacity="0.5" />
+                    <circle cx="25" cy="58" r="8" fill="#f472b6" opacity="0.5" />
+                    <circle cx="75" cy="58" r="8" fill="#f472b6" opacity="0.5" />
+                    <path d="M44 58 L50 78 L56 58 Z" fill="#fbbf24" stroke="#d97706" stroke-width="1" />
+                    <path d="M10 50 Q-10 55 5 85" stroke="#4f46e5" stroke-width="10" fill="none" stroke-linecap="round" />
+                    <path d="M90 50 Q110 55 95 85" stroke="#4f46e5" stroke-width="10" fill="none" stroke-linecap="round" />
+                    <path d="M35 15 L50 5 L65 15 L50 25 Z" fill="#1e293b" />
+                    <rect x="48" y="15" width="4" height="12" fill="#1e293b" />
+                    <circle cx="50" cy="27" r="2" fill="#fbbf24" />
+                </svg>
+
+                <!-- Kawaii Penguin -->
+                <svg class="w-24 h-24 md:w-38 md:h-38 z-40 -ml-16 overflow-visible" viewBox="0 0 100 100">
+                    <ellipse cx="50" cy="55" rx="38" ry="44" fill="#1e293b" />
+                    <ellipse cx="50" cy="64" rx="28" ry="34" fill="white" />
+                    <circle cx="40" cy="40" r="4.5" fill="white" />
+                    <circle cx="60" cy="40" r="4.5" fill="white" />
+                    <circle cx="40" cy="40" r="2" fill="black" />
+                    <circle cx="60" cy="40" r="2" fill="black" />
+                    <circle cx="35" cy="52" r="7" fill="#fca5a5" opacity="0.6" />
+                    <circle cx="65" cy="52" r="7" fill="#fca5a5" opacity="0.6" />
+                    <path d="M44 50 L50 65 L56 50 Z" fill="#f97316" stroke="#ea580c" stroke-width="1" />
+                    <path d="M15 60 Q2 65 8 80" stroke="#1e293b" stroke-width="8" fill="none" stroke-linecap="round" />
+                    <path d="M85 60 Q98 65 92 80" stroke="#1e293b" stroke-width="8" fill="none" stroke-linecap="round" />
+                </svg>
+
+                <!-- Kawaii Panda -->
+                <svg class="w-28 h-28 md:w-44 md:h-44 z-20 -ml-12 overflow-visible" viewBox="0 0 100 100">
+                    <circle cx="50" cy="55" r="42" fill="white" stroke="#1e293b" stroke-width="2" />
+                    <circle cx="20" cy="30" r="13" fill="#1e293b" />
+                    <circle cx="80" cy="30" r="13" fill="#1e293b" />
+                    <ellipse cx="35" cy="50" rx="11" ry="13" fill="#1e293b" />
+                    <ellipse cx="65" cy="50" rx="11" ry="13" fill="#1e293b" />
+                    <circle cx="35" cy="48" r="3.5" fill="white" />
+                    <circle cx="65" cy="48" r="3.5" fill="white" />
+                    <circle cx="50" cy="65" r="5" fill="#1e293b" />
+                    <circle cx="32" cy="60" r="7" fill="#fca5a5" opacity="0.4" />
+                    <circle cx="68" cy="60" r="7" fill="#fca5a5" opacity="0.4" />
+                    <path d="M45 72 Q50 77 55 72" stroke="#1e293b" stroke-width="2.5" fill="none" stroke-linecap="round" />
+                </svg>
+
+                <!-- Kawaii Monkey -->
+                <svg class="w-26 h-26 md:w-40 md:h-40 z-10 -ml-12 overflow-visible" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="44" fill="#b45309" stroke="#92400e" stroke-width="1" />
+                    <path d="M50 15 Q25 15 25 50 Q25 85 50 85 Q75 85 75 50 Q75 15 50 15" fill="#ffedd5" />
+                    <circle cx="40" cy="45" r="4" fill="#451a03" />
+                    <circle cx="60" cy="45" r="4" fill="#451a03" />
+                    <circle cx="38" cy="43" r="1.5" fill="white" opacity="0.6" />
+                    <circle cx="58" cy="43" r="1.5" fill="white" opacity="0.6" />
+                    <circle cx="35" cy="58" r="7" fill="#fda4af" opacity="0.6" />
+                    <circle cx="65" cy="58" r="7" fill="#fda4af" opacity="0.6" />
+                    <path d="M45 68 Q50 74 55 68" stroke="#451a03" stroke-width="3" fill="none" stroke-linecap="round" />
+                    <circle cx="10" cy="45" r="15" fill="#b45309" />
+                    <circle cx="90" cy="45" r="15" fill="#b45309" />
+                    <circle cx="10" cy="45" r="9" fill="#ffedd5" />
+                    <circle cx="90" cy="45" r="9" fill="#ffedd5" />
+                </svg>
+
+                <!-- School Bag (Smallest) -->
+                <svg class="w-18 h-18 md:w-28 md:h-28 z-0 -ml-10 mb-2 svg-sway overflow-visible" viewBox="0 0 100 100">
+                    <rect x="20" y="35" width="60" height="55" rx="15" fill="#f43f5e" stroke="#e11d48" stroke-width="2" />
+                    <rect x="30" y="22" width="40" height="25" rx="12" fill="#e11d48" />
+                    <rect x="35" y="55" width="30" height="18" rx="8" fill="white" opacity="0.4" />
+                    <circle cx="42" cy="45" r="3.5" fill="white" />
+                    <circle cx="58" cy="45" r="3.5" fill="white" />
+                    <path d="M50 35 V48" stroke="white" stroke-width="5" stroke-linecap="round" />
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header / Cartoon Dock -->
+    <header class="max-w-7xl w-full mx-auto mb-6 z-20 sticky top-0 px-2 md:px-4 flex-shrink-0 mt-4">
+        <div class="cartoon-dock p-3 px-6 md:px-10 flex justify-between items-center animate-bounce-subtle">
+            <div class="flex items-center gap-4 md:gap-6">
+                <div class="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-3 rounded-full text-white shadow-[0_10px_20px_rgba(99,102,241,0.3)] rotate-[-5deg] hover:rotate-0 transition-all cursor-pointer">
+                    <i data-lucide="sparkles" class="w-7 h-7 md:w-8 md:h-8"></i>
+                </div>
+                <div class="hidden sm:block">
+                    <h1 class="font-cartoon text-2xl md:text-4xl gradient-text leading-none tracking-wider mb-1.5">AI 闯关乐园</h1>
+                    <div id="status-bubble" class="text-[12px] font-bold text-indigo-400 flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 bg-indigo-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(129,140,248,0.8)]"></span>
+                        <span id="interaction-text" class="tracking-wide">准备好开始冒险了吗？</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grade & Score Badge -->
+            <div class="flex items-center gap-4 md:gap-6">
+                <div id="grade-badge" class="flex bg-indigo-50/60 px-5 md:px-8 py-2.5 rounded-full border-2 border-indigo-100 items-center gap-3 shadow-inner">
+                    <i data-lucide="graduation-cap" class="w-5 h-5 md:w-6 md:h-6 text-indigo-500"></i>
+                    <span id="grade-display" class="text-[12px] md:text-base font-black text-indigo-600">请选择年级</span>
+                </div>
+                <div class="bg-amber-50/80 px-6 md:px-10 py-2.5 md:py-3 rounded-full border-2 border-amber-200 flex items-center gap-3 shadow-md hover:scale-105 transition-all">
+                    <i data-lucide="trophy" class="w-6 h-6 md:w-7 md:h-7 text-amber-500 fill-amber-400"></i>
+                    <span id="score-display" class="font-black text-amber-700 text-lg md:text-2xl">0</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0 overflow-visible pb-8">
+        
+        <!-- Play Area -->
+        <div id="play-area" class="lg:col-span-8 bg-white/95 backdrop-blur-md rounded-[4rem] shadow-[0_25px_60px_rgba(0,0,0,0.08)] flex flex-col min-h-0 overflow-hidden border-4 border-white relative">
+            <!-- Content injected by JS -->
+        </div>
+
+        <!-- Sidebar AI Chat -->
+        <div class="lg:col-span-4 h-full flex flex-col min-h-0">
+            <div class="flex-1 mesh-gradient rounded-[4rem] shadow-[0_25px_60px_rgba(0,0,0,0.08)] flex flex-col min-h-0 overflow-hidden border-4 border-white relative">
+                <!-- Guide Icon with MG Animation - Background -->
+                <div class="absolute bottom-10 left-10 opacity-[0.08] animate-mg pointer-events-none">
+                    <i data-lucide="message-circle" class="w-24 h-24 md:w-32 md:h-32 text-indigo-400"></i>
+                </div>
+                
+                <div class="p-6 flex items-center gap-5 border-b border-teal-100/30 bg-white/60 backdrop-blur-md relative z-10">
+                    <div class="w-12 h-12 bg-gradient-to-tr from-indigo-600 to-blue-400 rounded-2xl flex items-center justify-center text-white shadow-lg rotate-3">
+                        <i data-lucide="bot" class="w-7 h-7"></i>
+                    </div>
+                    <div>
+                        <span class="text-slate-800 font-cartoon text-base block tracking-wide">AI 助学精灵</span>
+                        <span class="text-[11px] font-bold text-emerald-500 flex items-center gap-2 mt-0.5">
+                            <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                            正在陪你学习
+                        </span>
+                    </div>
+                </div>
+                <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-5 scrollbar-hide">
+                    <div class="flex justify-start">
+                        <div class="p-4 px-6 rounded-[2rem] text-sm font-bold bg-white text-slate-700 rounded-tl-none border border-teal-50 shadow-sm leading-relaxed max-w-[90%]">
+                            你好呀！我是你的AI助学伙伴。准备好挑战了吗？先选一下年级吧！✨
+                        </div>
+                    </div>
+                </div>
+                <div class="px-6 pb-14 pt-4 bg-white/60 backdrop-blur-2xl border-t border-teal-100/20">
+                    <form id="chat-form" class="flex gap-3">
+                        <input type="text" id="chat-input" placeholder="想问什么都可以哦..." class="flex-1 bg-white border-2 border-indigo-50 text-slate-700 px-6 py-3.5 rounded-full outline-none focus:border-indigo-300 text-sm font-bold shadow-inner transition-all">
+                        <button type="submit" class="bg-gradient-to-r from-indigo-600 to-blue-500 text-white w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg hover:scale-110 active:scale-90 transition-all">
+                            <i data-lucide="send" class="w-6 h-6"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full text-center py-2 flex-shrink-0 z-10">
+        <div class="inline-flex items-center gap-2 px-8 py-1.5 bg-white/50 backdrop-blur-sm rounded-full border border-white shadow-sm">
+            <span class="text-[11px] font-cartoon text-indigo-400 tracking-[0.5em] opacity-80 uppercase">AI学习探索乐园</span>
+        </div>
+    </footer>
+
+    <script>
+        // --- 全局状态 ---
+        let state = {
+            grade: null,
+            subject: null,
+            score: 0,
+            qCount: 0,
+            currentQuestion: null,
+            showExplanation: false,
+            selectedOption: null,
+            interactionMsg: "准备好开始冒险了吗？",
+            askedQuestions: [] // 记录当前轮次已出的题目
+        };
+
+        const GRADES = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级'];
+        const SUBJECTS = [
+            { n: '数学', i: 'calculator', c: 'bg-orange-400' },
+            { n: '语文', i: 'book-open', c: 'bg-emerald-400' },
+            { n: '英语', i: 'languages', c: 'bg-blue-400' },
+            { n: '地理', i: 'map', c: 'bg-cyan-400' },
+            { n: '历史', i: 'history', c: 'bg-amber-500' },
+            { n: '百科', i: 'globe-2', c: 'bg-purple-400' }
+        ];
+
+        const INTERACTIVE_TEXTS = {
+            start: ["加油，你是最棒的！", "新的挑战开始啦！", "准备好大显身手了吗？"],
+            middle: ["进行到一半啦，真厉害！", "保持节奏，你很稳哦！", "智慧的小脑袋转起来了！"],
+            nearEnd: ["快要通关啦，最后冲刺！", "只剩几题了，加油加油！", "终点就在前方！"],
+            correct: ["哇！太厉害了！", "完全正确，满分！", "你真是个天才！"],
+            wrong: ["没关系，再接再厉哦！", "差一点点，下次一定行！", "学习就是不断进步的过程！"]
+        };
+
+        // ... (QUESTION_BANK 数据保持不变，此处省略，代码中需保留) ...
+        const QUESTION_BANK = {
+            '语文': [
+                // 1-2年级 (30+)
+                { g: [1,2], q: "“春眠不觉晓”的下一句是？", o: ["处处闻啼鸟", "低头思故乡", "云深不知处"], a: "处处闻啼鸟", e: "出自孟浩然的《春晓》。" },
+                { g: [1,2], q: "“鹅，鹅，鹅”的下一句是？", o: ["曲项向天歌", "白毛浮绿水", "红掌拨清波"], a: "曲项向天歌", e: "这是骆宾王的《咏鹅》。" },
+                { g: [1,2], q: "小猫的叫声是？", o: ["喵喵", "汪汪", "叽叽"], a: "喵喵", e: "常识题，小猫喵喵叫。" },
+                { g: [1,2], q: "“影子”的拼音是？", o: ["yǐng zi", "yǐn zi", "yǐng zhi"], a: "yǐng zi", e: "影是后鼻音。" },
+                { g: [1,2], q: "“一寸光阴一寸金”的下一句是？", o: ["寸金难买寸光阴", "明日复明日", "少壮不努力"], a: "寸金难买寸光阴", e: "比喻时间非常宝贵。" },
+                { g: [1,2], q: "《咏鹅》中，“白毛”浮在什么水上？", o: ["绿水", "红水", "清清的水"], a: "绿水", e: "原诗：白毛浮绿水。" },
+                { g: [1,2], q: "“头顶红冠穿白衣，清早起来喔喔啼”指的是什么动物？", o: ["公鸡", "鸭子", "鹅"], a: "公鸡", e: "谜语：公鸡喔喔叫。" },
+                { g: [1,2], q: "“白日依山尽”的下一句是？", o: ["黄河入海流", "更上一层楼", "疑是地上霜"], a: "黄河入海流", e: "出自王之涣的《登鹳雀楼》。" },
+                { g: [1,2], q: "“锄禾日当午”的作者是谁？", o: ["李绅", "李白", "杜甫"], a: "李绅", e: "出自《悯农》。" },
+                { g: [1,2], q: "下列哪个字是左右结构的？", o: ["好", "上", "中"], a: "好", e: "“好”由“女”和“子”左右组成。" },
+                { g: [1,2], q: "“床前明月光”的作者是？", o: ["李白", "杜甫", "白居易"], a: "李白", e: "出自《静夜思》。" },
+                { g: [1,2], q: "“小时不识月”的下一句是？", o: ["呼作白玉盘", "飞在青云端", "月下飞天镜"], a: "呼作白玉盘", e: "出自李白的《古朗月行》。" },
+                { g: [1,2], q: "“人有两件宝，双手和____”？", o: ["大脑", "双脚", "眼睛"], a: "大脑", e: "儿歌：人有两件宝，双手和大脑。" },
+                { g: [1,2], q: "“锄禾日当午，汗滴____”？", o: ["禾下土", "田中土", "泥土里"], a: "禾下土", e: "出自《悯农》。" },
+                { g: [1,2], q: "“举头望明月”的下一句是？", o: ["低头思故乡", "低头看大地", "低头玩游戏"], a: "低头思故乡", e: "出自《静夜思》。" },
+                { g: [1,2], q: "“草”的拼音是？", o: ["cǎo", "chǎo", "zǎo"], a: "cǎo", e: "草是平舌音。" },
+                { g: [1,2], q: "“妈妈”的拼音是？", o: ["mā ma", "mǎ ma", "má ma"], a: "mā ma", e: "第一个音是第一声。" },
+                { g: [1,2], q: "“小猴子下山”先摘了什么？", o: ["玉米", "桃子", "西瓜"], a: "玉米", e: "故事里小猴子先摘了玉米。" },
+                { g: [1,2], q: "“弯弯的月儿小小的船”下一句是？", o: ["小小的船儿两头尖", "闪闪的星星蓝蓝的天", "我在小船里坐"], a: "小小的船儿两头尖", e: "出自课文《小小的船》。" },
+                { g: [1,2], q: "“远看山有色”的下一句是？", o: ["近听水无声", "春去花还在", "人来鸟不惊"], a: "近听水无声", e: "这是一首画谜诗。" },
+                { g: [1,2], q: "“谁知盘中餐”的上一句是？", o: ["汗滴禾下土", "锄禾日当午", "粒粒皆辛苦"], a: "汗滴禾下土", e: "出自《悯农》。" },
+                { g: [1,2], q: "“早晨起来，面向太阳”后面是？", o: ["前面是东，后面是西", "前面是西，后面是东", "前面是南，后面是北"], a: "前面是东，后面是西", e: "基本的方向常识。" },
+                { g: [1,2], q: "“风”的拼音是？", o: ["fēng", "fōng", "fāng"], a: "fēng", e: "风是后鼻音。" },
+                { g: [1,2], q: "“坐”的反义词是？", o: ["站", "跑", "跳"], a: "站", e: "坐对站。" },
+                { g: [1,2], q: "“大”的反义词是？", o: ["小", "多", "长"], a: "小", e: "大对小。" },
+                { g: [1,2], q: "“上”的反义词是？", o: ["下", "左", "右"], a: "下", e: "上对下。" },
+                { g: [1,2], q: "“白毛浮绿水”的下一句是？", o: ["红掌拨清波", "曲项向天歌", "白毛浮绿水"], a: "红掌拨清波", e: "出自《咏鹅》。" },
+                { g: [1,2], q: "“春去花还在”的下一句是？", o: ["人来鸟不惊", "近听水无声", "远看山有色"], a: "人来鸟不惊", e: "出自诗歌《画》。" },
+                { g: [1,2], q: "“百”字有多少画？", o: ["6画", "5画", "7画"], a: "6画", e: "一、ノ、丨、𠃍、一、一。" },
+                { g: [1,2], q: "“木”字加一笔变成什么字？", o: ["本", "才", "禾"], a: "本", e: "加一横在下面变成“本”。" },
+                
+                // 3-4年级 (30+)
+                { g: [3,4], q: "“欲穷千里目”下一句是？", o: ["更上一层楼", "黄河入海流", "危楼高百尺"], a: "更上一层楼", e: "出自王之涣的《登鹳雀楼》。" },
+                { g: [3,4], q: "《静夜思》的作者是谁？", o: ["李白", "杜甫", "白居易"], a: "李白", e: "诗仙李白的经典作品。" },
+                { g: [3,4], q: "“落红不是无情物”的下一句是？", o: ["化作春泥更护花", "万紫千红总是春", "春江水暖鸭先知"], a: "化作春泥更护花", e: "龚自珍的诗句。" },
+                { g: [3,4], q: "成语“画蛇添足”的意思是？", o: ["做了多余的事反而不好", "画蛇很厉害", "给蛇加脚更好看"], a: "做了多余的事反而不好", e: "寓言故事，比喻多此一举。" },
+                { g: [3,4], q: "“遥看瀑布挂前川”的上一句是？", o: ["日照香炉生紫烟", "白日依山尽", "飞流直下三千尺"], a: "日照香炉生紫烟", e: "李白的《望庐山瀑布》。" },
+                { g: [3,4], q: "成语“守株待兔”告诉我们要？", o: ["不能指望不劳而获", "要保护兔子", "种树很重要"], a: "不能指望不劳而获", e: "比喻妄想不劳而获。" },
+                { g: [3,4], q: "“两个黄鹂鸣翠柳”的下一句是？", o: ["一行白鹭上青天", "窗含西岭千秋雪", "门泊东吴万里船"], a: "一行白鹭上青天", e: "杜甫的《绝句》。" },
+                { g: [3,4], q: "《西游记》中，孙悟空的师父是？", o: ["菩提老祖", "唐僧", "如来佛祖"], a: "菩提老祖", e: "在灵台方寸山斜月三星洞授徒。" },
+                { g: [3,4], q: "“朝辞白帝彩云间”的下一句是？", o: ["千里江陵一日还", "轻舟已过万重山", "两岸猿声啼不住"], a: "千里江陵一日还", e: "李白的《早发白帝城》。" },
+                { g: [3,4], q: "下列哪个词是形容夏天的？", o: ["烈日炎炎", "春光明媚", "秋高气爽"], a: "烈日炎炎", e: "形容夏天阳光强烈。" },
+                { g: [3,4], q: "“接天莲叶无穷碧”的下一句是？", o: ["映日荷花别样红", "荷花朵朵开", "小荷才露尖尖角"], a: "映日荷花别样红", e: "出自杨万里的《晓出净慈寺送林子方》。" },
+                { g: [3,4], q: "“随风潜入夜”的下一句是？", o: ["润物细无声", "处处闻啼鸟", "花落知多少"], a: "润物细无声", e: "出自杜甫的《春夜喜雨》。" },
+                { g: [3,4], q: "“千山鸟飞绝”的下一句是？", o: ["万径人踪灭", "孤舟蓑笠翁", "独钓寒江雪"], a: "万径人踪灭", e: "出自柳宗元的《江雪》。" },
+                { g: [3,4], q: "《草》的作者是？", o: ["白居易", "李白", "杜甫"], a: "白居易", e: "“野火烧不尽，春风吹又生”。" },
+                { g: [3,4], q: "“谁知盘中餐”的下一句是？", o: ["粒粒皆辛苦", "汗滴禾下土", "谁知其中苦"], a: "粒粒皆辛苦", e: "出自《悯农》。" },
+                { g: [3,4], q: "“夜来风雨声”的下一句是？", o: ["花落知多少", "处处闻啼鸟", "春眠不觉晓"], a: "花落知多少", e: "出自孟浩然的《春晓》。" },
+                { g: [3,4], q: "“欲把西湖比西子”的下一句是？", o: ["淡妆浓抹总相宜", "山色空蒙雨亦奇", "水光潋滟晴方好"], a: "淡妆浓抹总相宜", e: "苏轼描写西湖的名句。" },
+                { g: [3,4], q: "成语“闻鸡起舞”的主人公是？", o: ["祖逖", "勾践", "匡衡"], a: "祖逖", e: "形容刻苦磨炼。" },
+                { g: [3,4], q: "“停车坐爱枫林晚”的下一句是？", o: ["霜叶红于二月花", "远上寒山石径斜", "白云生处有人家"], a: "霜叶红于二月花", e: "出自杜牧的《山行》。" },
+                { g: [3,4], q: "“不识庐山真面目”的下一句是？", o: ["只缘身在此山中", "远近高低各不同", "横看成岭侧成峰"], a: "只缘身在此山中", e: "出自苏轼的《题西林壁》。" },
+                { g: [3,4], q: "成语“惊弓之鸟”中的箭术高手是？", o: ["更羸", "后羿", "养由基"], a: "更羸", e: "寓言故事，比喻受过惊吓后遇到类似情况就惶恐不安。" },
+                { g: [3,4], q: "“独在异乡为异客”的下一句是？", o: ["每逢佳节倍思亲", "遍插茱萸少一人", "遥知兄弟登高处"], a: "每逢佳节倍思亲", e: "王维《九月九日忆山东兄弟》。" },
+                { g: [3,4], q: "“西塞山前白鹭飞”的下一句是？", o: ["桃花流水鳜鱼肥", "青箬笠，绿蓑衣", "斜风细雨不须归"], a: "桃花流水鳜鱼肥", e: "出自张志和的《渔歌子》。" },
+                { g: [3,4], q: "“葡萄美酒夜光杯”的下一句是？", o: ["欲饮琵琶马上催", "古来征战几人回", "醉卧沙场君莫笑"], a: "欲饮琵琶马上催", e: "出自王翰的《凉州词》。" },
+                { g: [3,4], q: "“生当作人杰”的下一句是？", o: ["死亦为鬼雄", "至今思项羽", "不肯过江东"], a: "死亦为鬼雄", e: "李清照的名句。" },
+                { g: [3,4], q: "“慈母手中线”的下一句是？", o: ["游子身上衣", "意恐迟迟归", "报得三春晖"], a: "游子身上衣", e: "出自孟郊的《游子吟》。" },
+                
+                // 5-6年级 (30+)
+                { g: [5,6], q: "《背影》中父亲穿过铁道去买的是？", o: ["朱砂橘", "大鸭梨", "红富士"], a: "朱砂橘", e: "朱自清散文中的经典细节。" },
+                { g: [5,6], q: "“先天下之忧而忧”出自哪篇文章？", o: ["《岳阳楼记》", "《醉翁亭记》", "《桃花源记》"], a: "《岳阳楼记》", e: "北宋范仲淹的名篇。" },
+                { g: [5,6], q: "《红楼梦》的作者是谁？", o: ["曹雪芹", "罗贯中", "吴承恩"], a: "曹雪芹", e: "中国古典小说巅峰之作。" },
+                { g: [5,6], q: "“海内存知己，天涯若比邻”是谁的诗句？", o: ["王勃", "苏轼", "李商隐"], a: "王勃", e: "出自《送杜少府之任蜀州》。" },
+                { g: [5,6], q: "成语“卧薪尝胆”的主人公是？", o: ["勾践", "夫差", "刘备"], a: "勾践", e: "越王勾践励精图治。" },
+                { g: [5,6], q: "“不以物喜，不以己悲”体现了怎样的心态？", o: ["豁达、淡然", "悲观、消极", "自大、骄傲"], a: "豁达、淡然", e: "范仲淹《岳阳楼记》中的名句。" },
+                { g: [5,6], q: "《水浒传》中绰号“及时雨”的是？", o: ["宋江", "林冲", "武松"], a: "宋江", e: "梁山好汉的首领。" },
+                { g: [5,6], q: "“路漫漫其修远兮，吾将上下而求索”出自？", o: ["《离骚》", "《诗经》", "《论语》"], a: "《离骚》", e: "屈原的名句。" },
+                { g: [5,6], q: "下列哪组词语中没有错别字？", o: ["振奋人心", "再接再励", "专心至志"], a: "振奋人心", e: "再接再厉；专心致志。" },
+                { g: [5,6], q: "“人生自古谁无死，留取丹心照汗青”的作者是？", o: ["文天祥", "岳飞", "辛弃疾"], a: "文天祥", e: "展现了高尚的爱国情操。" },
+                { g: [5,6], q: "《少年中国说》的作者是？", o: ["梁启超", "鲁迅", "胡适"], a: "梁启超", e: "激励中国少年发愤图强。" },
+                { g: [5,6], q: "“莫愁前路无知己”的下一句是？", o: ["天下谁人不识君", "天涯若比邻", "劝君更尽一杯酒"], a: "天下谁人不识君", e: "出自高适的《别董大》。" },
+                { g: [5,6], q: "“大漠孤烟直”的下一句是？", o: ["长河落日圆", "黄河入海流", "孤帆一片日边来"], a: "长河落日圆", e: "出自王维的《使至塞上》。" },
+                { g: [5,6], q: "下列哪个词语形容女子容貌美丽？", o: ["闭月羞花", "仪表堂堂", "气宇轩昂"], a: "闭月羞花", e: "形容女子极美。" },
+                { g: [5,6], q: "《三国演义》中“草船借箭”的是？", o: ["诸葛亮", "周瑜", "关羽"], a: "诸葛亮", e: "利用大雾向曹操借箭。" },
+                { g: [5,6], q: "“青，取之于蓝而青于蓝”出自？", o: ["《劝学》", "《师说》", "《论语》"], a: "《劝学》", e: "荀子的文章，强调学习的重要性。" },
+                { g: [5,6], q: "“采菊东篱下，悠然见南山”的作者是？", o: ["陶渊明", "谢灵运", "王维"], a: "陶渊明", e: "隐逸诗人的代表作。" },
+                { g: [5,6], q: "《西游记》中，唐僧在哪个地方收了孙悟空？", o: ["五行山", "高老庄", "流沙河"], a: "五行山", e: "孙悟空被压在五行山下五百年。" },
+                { g: [5,6], q: "“会当凌绝顶”的下一句是？", o: ["一览众山小", "决眦入归鸟", "造化钟神秀"], a: "一览众山小", e: "出自杜甫的《望岳》。" },
+                { g: [5,6], q: "“山重水复疑无路”的下一句是？", o: ["柳暗花明又一村", "轻舟已过万重山", "两岸猿声啼不住"], a: "柳暗花明又一村", e: "出自陆游的《游山西村》。" },
+                { g: [5,6], q: "成语“破釜沉舟”与哪场战役有关？", o: ["巨鹿之战", "官渡之战", "赤壁之战"], a: "巨鹿之战", e: "项羽勇猛作战，断绝后路。" },
+                { g: [5,6], q: "“春风又绿江南岸”的下一句是？", o: ["明月何时照我还", "京口瓜洲一水间", "钟山只隔数重山"], a: "明月何时照我还", e: "出自王安石的《泊船瓜洲》。" },
+                { g: [5,6], q: "下列哪位不是“唐宋八大家”之一？", o: ["李白", "苏轼", "韩愈"], a: "李白", e: "李白是诗人，不在散文八大家之列。" },
+                { g: [5,6], q: "“但愿人长久，千里共婵娟”中的“婵娟”指？", o: ["月亮", "美女", "思念"], a: "月亮", e: "苏轼的名句。" },
+                { g: [5,6], q: "《论语》是记录谁及其弟子言行的书？", o: ["孔子", "孟子", "庄子"], a: "孔子", e: "儒家经典之一。" },
+                { g: [5,6], q: "“横眉冷对千夫指”的下一句是？", o: ["俯首甘为孺子牛", "心事浩茫连广宇", "于无声处听惊雷"], a: "俯首甘为孺子牛", e: "鲁迅的名句。" }
+            ],
+            '英语': [
+                // 1-2年级 (30+)
+                { g: [1,2], q: "“红”的英文单词是？", o: ["Red", "Blue", "Green"], a: "Red", e: "Red 是红色。" },
+                { g: [1,2], q: "数字“5”的英文是？", o: ["Five", "Four", "Six"], a: "Five", e: "One, Two, Three, Four, Five!" },
+                { g: [1,2], q: "“苹果”的英文是？", o: ["Apple", "Banana", "Pear"], a: "Apple", e: "Apple 是苹果。" },
+                { g: [1,2], q: "“你好”用英语怎么说？", o: ["Hello", "Goodbye", "Sorry"], a: "Hello", e: "Hello 是问好。" },
+                { g: [1,2], q: "“书”的英文单词是？", o: ["Book", "Pen", "Bag"], a: "Book", e: "Book 是书。" },
+                { g: [1,2], q: "“猫”的英文单词是？", o: ["Cat", "Dog", "Bird"], a: "Cat", e: "Cat 是小猫。" },
+                { g: [1,2], q: "“香蕉”的英文单词是？", o: ["Banana", "Apple", "Orange"], a: "Banana", e: "Banana 是香蕉。" },
+                { g: [1,2], q: "“再见”用英语怎么说？", o: ["Goodbye", "Hello", "Thanks"], a: "Goodbye", e: "Goodbye 是再见。" },
+                { g: [1,2], q: "“老师”的英文单词是？", o: ["Teacher", "Student", "Doctor"], a: "Teacher", e: "Teacher 是老师。" },
+                { g: [1,2], q: "“一”的英文单词是？", o: ["One", "Two", "Three"], a: "One", e: "One 是数字1。" },
+                { g: [1,2], q: "“二”的英文单词是？", o: ["Two", "One", "Three"], a: "Two", e: "Two 是数字2。" },
+                { g: [1,2], q: "“三”的英文单词是？", o: ["Three", "One", "Two"], a: "Three", e: "Three 是数字3。" },
+                { g: [1,2], q: "“眼睛”的英文单词是？", o: ["Eye", "Ear", "Nose"], a: "Eye", e: "Eye 是眼睛。" },
+                { g: [1,2], q: "“嘴巴”的英文单词是？", o: ["Mouth", "Hand", "Foot"], a: "Mouth", e: "Mouth 是嘴巴。" },
+                { g: [1,2], q: "“大”的英文单词是？", o: ["Big", "Small", "Long"], a: "Big", e: "Big 是大。" },
+                { g: [1,2], q: "“小”的英文单词是？", o: ["Small", "Big", "Short"], a: "Small", e: "Small 是小。" },
+                { g: [1,2], q: "“太阳”的英文单词是？", o: ["Sun", "Moon", "Star"], a: "Sun", e: "Sun 是太阳。" },
+                { g: [1,2], q: "“月亮”的英文单词是？", o: ["Moon", "Sun", "Cloud"], a: "Moon", e: "Moon 是月亮。" },
+                { g: [1,2], q: "“谢谢”用英语怎么说？", o: ["Thank you", "Sorry", "Please"], a: "Thank you", e: "Thank you 是谢谢。" },
+                { g: [1,2], q: "“对不起”用英语怎么说？", o: ["Sorry", "Thanks", "Hello"], a: "Sorry", e: "Sorry 是对不起。" },
+                
+                // 3-4年级 (30+)
+                { g: [3,4], q: "“医生”的英文单词是？", o: ["Doctor", "Teacher", "Nurse"], a: "Doctor", e: "Doctor 医生，Teacher 老师。" },
+                { g: [3,4], q: "I ____ a student.", o: ["am", "is", "are"], a: "am", e: "I 后面接 am。" },
+                { g: [3,4], q: "“钢笔”的英文单词是？", o: ["Pen", "Pencil", "Book"], a: "Pen", e: "Pen 钢笔，Pencil 铅笔。" },
+                { g: [3,4], q: "“星期一”用英语怎么说？", o: ["Monday", "Tuesday", "Sunday"], a: "Monday", e: "Monday 是星期一。" },
+                { g: [3,4], q: "What color is the sky? (天是什么颜色的？)", o: ["Blue", "Red", "Yellow"], a: "Blue", e: "天通常是蓝色的。" },
+                { g: [3,4], q: "“大”的英文反义词（小）是？", o: ["Small", "Long", "Short"], a: "Small", e: "Big 的反义词是 Small。" },
+                { g: [3,4], q: "He ____ my friend.", o: ["is", "am", "are"], a: "is", e: "He 是第三人称单数，用 is。" },
+                { g: [3,4], q: "“狮子”的英文单词是？", o: ["Lion", "Tiger", "Elephant"], a: "Lion", e: "Lion 狮子。" },
+                { g: [3,4], q: "Can you swim? 的回答是？", o: ["Yes, I can", "Yes, I do", "No, I am not"], a: "Yes, I can", e: "Can 引导的疑问句用 can 回答。" },
+                { g: [3,4], q: "“牛奶”的英文单词是？", o: ["Milk", "Juice", "Water"], a: "Milk", e: "Milk 牛奶。" },
+                { g: [3,4], q: "“西瓜”的英文是？", o: ["Watermelon", "Mango", "Lemon"], a: "Watermelon", e: "Water + Melon = Watermelon。" },
+                { g: [3,4], q: "“谢谢你”怎么说？", o: ["Thank you", "You're welcome", "Please"], a: "Thank you", e: "表示感谢。" },
+                { g: [3,4], q: "____ is it? (几点了？)", o: ["What time", "Where", "How"], a: "What time", e: "提问时间用 What time。" },
+                { g: [3,4], q: "“跳舞”的英文是？", o: ["Dance", "Sing", "Jump"], a: "Dance", e: "Dance 是跳舞。" },
+                { g: [3,4], q: "“星期五”怎么说？", o: ["Friday", "Saturday", "Thursday"], a: "Friday", e: "Friday 星期五。" },
+                { g: [3,4], q: "“医生”在哪里工作？", o: ["Hospital", "School", "Farm"], a: "Hospital", e: "Hospital 是医院。" },
+                { g: [3,4], q: "“冬天”的英文单词是？", o: ["Winter", "Summer", "Spring"], a: "Winter", e: "Winter 是冬天。" },
+                { g: [3,4], q: "“香肠”的英文是？", o: ["Sausage", "Bread", "Cake"], a: "Sausage", e: "Sausage 是香肠。" },
+                { g: [3,4], q: "How many legs does a spider have?", o: ["Eight", "Six", "Four"], a: "Eight", e: "蜘蛛有8条腿。" },
+                { g: [3,4], q: "“书桌”的英文是？", o: ["Desk", "Chair", "Table"], a: "Desk", e: "Desk 是书桌。" },
+                { g: [3,4], q: "“风筝”的英文是？", o: ["Kite", "Ball", "Toy"], a: "Kite", e: "Kite 是风筝。" },
+                { g: [3,4], q: "“兄弟”的英文是？", o: ["Brother", "Sister", "Cousin"], a: "Brother", e: "Brother 是兄弟。" },
+                { g: [3,4], q: "“足球”的英文是？", o: ["Football", "Basketball", "Tennis"], a: "Football", e: "Football 是足球。" },
+                { g: [3,4], q: "“游泳”的英文单词是？", o: ["Swim", "Run", "Walk"], a: "Swim", e: "Swim 是游泳。" },
+                { g: [3,4], q: "“公园”的英文单词是？", o: ["Park", "Zoo", "Farm"], a: "Park", e: "Park 是公园。" },
+                { g: [3,4], q: "“早晨”的英文单词是？", o: ["Morning", "Afternoon", "Evening"], a: "Morning", e: "Morning 是早晨。" },
+                { g: [3,4], q: "“天空”的英文单词是？", o: ["Sky", "Cloud", "Rain"], a: "Sky", e: "Sky 是天空。" },
+                { g: [3,4], q: "“衬衫”的英文单词是？", o: ["Shirt", "Dress", "T-shirt"], a: "Shirt", e: "Shirt 是衬衫。" },
+                
+                // 5-6年级 (30+)
+                { g: [5,6], q: "Which is a fruit?", o: ["Apple", "Carrot", "Potato"], a: "Apple", e: "Apple 是水果，其他是蔬菜。" },
+                { g: [5,6], q: "What's the weather like? (晴天)", o: ["Sunny", "Rainy", "Cloudy"], a: "Sunny", e: "Sunny 代表晴朗的天气。" },
+                { g: [5,6], q: "“回收”的英文单词是？", o: ["Recycle", "Reduce", "Reuse"], a: "Recycle", e: "Recycle 意为回收利用。" },
+                { g: [5,6], q: "How many months are there in a year?", o: ["Twelve", "Ten", "Seven"], a: "Twelve", e: "一年有12个月。" },
+                { g: [5,6], q: "Which is the first month of a year?", o: ["January", "February", "December"], a: "January", e: "一月是 January。" },
+                { g: [5,6], q: "I ____ to school yesterday.", o: ["went", "go", "going"], a: "went", e: "Yesterday 过去式，用 went。" },
+                { g: [5,6], q: "The elephant is ____ than the dog.", o: ["bigger", "big", "biggest"], a: "bigger", e: "比较级用 bigger。" },
+                { g: [5,6], q: "“医生”在医院工作，用英语说？", o: ["In a hospital", "In a school", "In a park"], a: "In a hospital", e: "Hospital 是医院。" },
+                { g: [5,6], q: "“圣诞节”在哪个月？", o: ["December", "November", "October"], a: "December", e: "12月25日。" },
+                { g: [5,6], q: "Which animal can fly?", o: ["Bird", "Fish", "Rabbit"], a: "Bird", e: "鸟会飞。" },
+                { g: [5,6], q: "“有趣的”英文单词是？", o: ["Interesting", "Boring", "Difficult"], a: "Interesting", e: "Interesting 是有趣的。" },
+                { g: [5,6], q: "He ____ like apples.", o: ["doesn't", "don't", "isn't"], a: "doesn't", e: "第三人称单数否定用 doesn't。" },
+                { g: [5,6], q: "What is your ____? (你的爱好是什么？)", o: ["hobby", "job", "name"], a: "hobby", e: "Hobby 是爱好。" },
+                { g: [5,6], q: "“电脑”的英文是？", o: ["Computer", "Radio", "Television"], a: "Computer", e: "Computer 是电脑。" },
+                { g: [5,6], q: "“夏天”的英文单词是？", o: ["Summer", "Spring", "Autumn"], a: "Summer", e: "Summer 是夏天。" },
+                { g: [5,6], q: "“图书馆”的英文是？", o: ["Library", "Museum", "Cinema"], a: "Library", e: "Library 是图书馆。" },
+                { g: [5,6], q: "“激动人心的”怎么说？", o: ["Exciting", "Tired", "Sad"], a: "Exciting", e: "Exciting 是激动人心的。" },
+                { g: [5,6], q: "“明天”的英文单词是？", o: ["Tomorrow", "Today", "Yesterday"], a: "Tomorrow", e: "Tomorrow 是明天。" },
+                { g: [5,6], q: "“重要的”英文单词是？", o: ["Important", "Easy", "Small"], a: "Important", e: "Important 是重要的。" },
+                { g: [5,6], q: "“地球”的英文是？", o: ["Earth", "Moon", "Sun"], a: "Earth", e: "Earth 是地球。" },
+                { g: [5,6], q: "Which is the biggest ocean?", o: ["Pacific Ocean", "Atlantic Ocean", "Indian Ocean"], a: "Pacific Ocean", e: "太平洋是最大的海洋。" },
+                { g: [5,6], q: "“科学家”的英文是？", o: ["Scientist", "Artist", "Writer"], a: "Scientist", e: "Scientist 是科学家。" },
+                { g: [5,6], q: "“环境”的英文单词是？", o: ["Environment", "Education", "Experience"], a: "Environment", e: "Environment 是环境。" },
+                { g: [5,6], q: "“各种各样的”怎么说？", o: ["Different kinds of", "The same as", "Good for"], a: "Different kinds of", e: "表示种类繁多。" },
+                { g: [5,6], q: "“相信”的英文单词是？", o: ["Believe", "Forget", "Remember"], a: "Believe", e: "Believe 是相信。" }
+            ],
+            '地理': [
+                // 1-3年级 (30+)
+                { g: [1,2,3], q: "地球上占比面积最大的是？", o: ["海洋", "陆地", "森林"], a: "海洋", e: "海洋占地球表面积约71%。" },
+                { g: [1,2,3], q: "太阳从哪个方向落下？", o: ["西方", "东方", "南方"], a: "西方", e: "太阳东升西落。" },
+                { g: [1,2,3], q: "世界上面积最大的大洲是？", o: ["亚洲", "非洲", "北美洲"], a: "亚洲", e: "亚洲面积最大。" },
+                { g: [1,2,3], q: "南极洲最典型的动物是？", o: ["企鹅", "北极熊", "袋鼠"], a: "企鹅", e: "企鹅生活在南极。" },
+                { g: [1,2,3], q: "指南针的 N 极指向什么方向？", o: ["北", "南", "东"], a: "北", e: "N 代表 North (北)。" },
+                { g: [1,2,3], q: "地球是什么形状的？", o: ["球形", "方形", "三角形"], a: "球形", e: "地球是一个不规则的球体。" },
+                { g: [1,2,3], q: "中国所在的洲是？", o: ["亚洲", "欧洲", "大洋洲"], a: "亚洲", e: "中国位于亚洲东部。" },
+                { g: [1,2,3], q: "彩虹通常出现在？", o: ["雨后", "晴天中午", "下雪天"], a: "雨后", e: "阳光经过水滴折射形成。" },
+                { g: [1,2,3], q: "世界上最长的河流是？", o: ["尼罗河", "亚马逊河", "长江"], a: "尼罗河", e: "位于非洲，全长6650公里。" },
+                { g: [1,2,3], q: "森林被称为地球的？", o: ["肺", "心脏", "肾"], a: "肺", e: "因为植物可以净化空气，产生氧气。" },
+                { g: [1,2,3], q: "被称为“冰雪大陆”的是？", o: ["南极洲", "亚洲", "欧洲"], a: "南极洲", e: "南极洲常年被冰雪覆盖。" },
+                { g: [1,2,3], q: "“大兴安岭”位于中国的哪个方位？", o: ["东北", "西北", "东南"], a: "东北", e: "位于中国东北地区。" },
+                { g: [1,2,3], q: "“黄河”流向哪个海洋？", o: ["渤海", "东海", "南海"], a: "渤海", e: "黄河入海口位于山东垦利。" },
+                { g: [1,2,3], q: "“五岳”之首是？", o: ["泰山", "华山", "嵩山"], a: "泰山", e: "泰山位于山东省泰安市。" },
+                { g: [1,2,3], q: "哪个星球离地球最近？", o: ["金星", "火星", "月球(卫星)"], a: "金星", e: "金星是距离地球最近的行星。" },
+                { g: [1,2,3], q: "“大堡礁”位于哪个洲？", o: ["大洋洲", "非洲", "南美洲"], a: "大洋洲", e: "位于澳大利亚。" },
+                { g: [1,2,3], q: "“长城”属于哪个国家？", o: ["中国", "印度", "埃及"], a: "中国", e: "中国古代伟大的防御工程。" },
+                { g: [1,2,3], q: "“金字塔”位于哪个国家？", o: ["埃及", "墨西哥", "希腊"], a: "埃及", e: "古埃及文明的象征。" },
+                { g: [1,2,3], q: "一年中，白昼最长的一天是？", o: ["夏至", "冬至", "春分"], a: "夏至", e: "北半球夏至日白昼最长。" },
+                { g: [1,2,3], q: "“北极熊”生活在哪里？", o: ["北极", "南极", "非洲"], a: "北极", e: "北极熊是北极的代表。" },
+                { g: [1,2,3], q: "“珠江”主要流经哪个城市？", o: ["广州", "北京", "上海"], a: "广州", e: "珠江穿过广州城。" },
+                { g: [1,2,3], q: "世界上最小的洲是？", o: ["大洋洲", "欧洲", "南极洲"], a: "大洋洲", e: "大洋洲面积最小。" },
+                { g: [1,2,3], q: "“长江”的发源地在？", o: ["青藏高原", "黄土高原", "云贵高原"], a: "青藏高原", e: "发源于唐古拉山脉。" },
+                { g: [1,2,3], q: "“四川”的省会是？", o: ["成都", "重庆", "昆明"], a: "成都", e: "成都又被称为“天府之国”。" },
+                { g: [1,2,3], q: "“地球仪”上蓝色的部分代表？", o: ["海洋", "陆地", "冰川"], a: "海洋", e: "蓝色通常代表水。" },
+                { g: [1,2,3], q: "“月球”绕着什么转？", o: ["地球", "太阳", "火星"], a: "地球", e: "月球是地球的天然卫星。" },
+                { g: [1,2,3], q: "大熊猫最爱吃的食物是？", o: ["竹子", "苹果", "香蕉"], a: "竹子", e: "大熊猫主要生活在四川等地。" },
+                { g: [1,2,3], q: "一年有几个季节？", o: ["4个", "3个", "12个"], a: "4个", e: "春夏秋冬。" },
+                { g: [1,2,3], q: "仙人掌生活在什么地方？", o: ["沙漠", "森林", "水里"], a: "沙漠", e: "它能储存大量水分。" },
+                { g: [1,2,3], q: "企鹅会飞吗？", o: ["不会", "会", "只有小企鹅会"], a: "不会", e: "企鹅是不会飞的鸟类。" },
+                { g: [1,2,3], q: "中国国旗上有几颗星星？", o: ["5颗", "4颗", "1颗"], a: "5颗", e: "五星红旗。" },
+                { g: [1,2,3], q: "森林里的“医生”是谁？", o: ["啄木鸟", "猫头鹰", "老虎"], a: "啄木鸟", e: "它专门捉树干里的害虫。" },
+                { g: [1,2,3], q: "太阳从哪边升起？", o: ["东方", "西方", "南方"], a: "东方", e: "东升西落。" },
+                
+                // 4-6年级 (30+)
+                { g: [4,5,6], q: "中国最高的山峰是？", o: ["珠穆朗玛峰", "泰山", "黄山"], a: "珠穆朗玛峰", e: "世界最高峰，位于喜马拉雅山脉。" },
+                { g: [4,5,6], q: "世界最大的沙漠是？", o: ["撒哈拉沙漠", "戈壁滩", "塔克拉玛干"], a: "撒哈拉沙漠", e: "位于非洲北部。" },
+                { g: [4,5,6], q: "中国的首都是？", o: ["北京", "上海", "广州"], a: "北京", e: "北京是中华人民共和国的首都。" },
+                { g: [4,5,6], q: "被称为“世界屋脊”的是？", o: ["青藏高原", "黄土高原", "云贵高原"], a: "青藏高原", e: "平均海拔4000米以上。" },
+                { g: [4,5,6], q: "世界最大的海洋是？", o: ["太平洋", "大西洋", "印度洋"], a: "太平洋", e: "占全球水面的一半。" },
+                { g: [4,5,6], q: "中国最长的河流是？", o: ["长江", "黄河", "珠江"], a: "长江", e: "世界第三长河。" },
+                { g: [4,5,6], q: "下列哪个城市被称为“日光城”？", o: ["拉萨", "成都", "南京"], a: "拉萨", e: "因为日照时间非常长。" },
+                { g: [4,5,6], q: "世界人口最多的国家是？", o: ["印度", "中国", "美国"], a: "印度", e: "目前印度人口略超中国，居世界第一。" },
+                { g: [4,5,6], q: "赤道所在的纬度是？", o: ["0度", "90度", "180度"], a: "0度", e: "赤道是地球上最长的纬线线圈。" },
+                { g: [4,5,6], q: "中国的陆地面积约是多少万平方公里？", o: ["960", "860", "1060"], a: "960", e: "居世界第三位。" },
+                { g: [4,5,6], q: "“三峡大坝”位于哪条河流上？", o: ["长江", "黄河", "松花江"], a: "长江", e: "位于长江上游。" },
+                { g: [4,5,6], q: "被称为“千岛之国”的是？", o: ["印度尼西亚", "菲律宾", "日本"], a: "印度尼西亚", e: "由上万个岛屿组成。" },
+                { g: [4,5,6], q: "世界上面积最大的国家是？", o: ["俄罗斯", "加拿大", "中国"], a: "俄罗斯", e: "横跨亚欧两大洲。" },
+                { g: [4,5,6], q: "“大堡礁”位于哪个国家？", o: ["澳大利亚", "新西兰", "巴西"], a: "澳大利亚", e: "世界最大的珊瑚礁群。" },
+                { g: [4,5,6], q: "“珠江”主要流经哪个省？", o: ["广东省", "福建省", "江苏省"], a: "广东省", e: "珠江三角洲是中国重要经济区。" },
+                { g: [4,5,6], q: "世界海拔最低的地方是？", o: ["死海", "马里亚纳海沟", "吐鲁番盆地"], a: "死海", e: "湖面海拔为-430米。" },
+                { g: [4,5,6], q: "“热带雨林”主要分布在？", o: ["赤道附近", "南北回归线", "南北极圈"], a: "赤道附近", e: "如亚马逊雨林。" },
+                { g: [4,5,6], q: "“马里亚纳海沟”位于哪个大洋？", o: ["太平洋", "大西洋", "印度洋"], a: "太平洋", e: "是已知海洋最深处。" },
+                { g: [4,5,6], q: "“本初子午线”是指？", o: ["0度经线", "0度纬线", "180度经线"], a: "0度经线", e: "通过英国伦敦格林尼治天文台旧址。" },
+                { g: [4,5,6], q: "“富士山”是哪个国家的象征？", o: ["日本", "韩国", "泰国"], a: "日本", e: "是日本最高峰，也是活火山。" },
+                { g: [4,5,6], q: "“尼罗河”注入哪个海？", o: ["地中海", "红海", "黑海"], a: "地中海", e: "自南向北流向地中海。" },
+                { g: [4,5,6], q: "被称为“南极主人”的动物是？", o: ["企鹅", "海豹", "磷虾"], a: "企鹅", e: "企鹅是南极洲的标志性动物。" },
+                { g: [4,5,6], q: "“格陵兰岛”是世界上最大的？", o: ["岛屿", "半岛", "群岛"], a: "岛屿", e: "位于北美洲东北部。" },
+                { g: [4,5,6], q: "“苏伊士运河”连接了？", o: ["地中海与红海", "太平洋与大西洋", "印度洋与太平洋"], a: "地中海与红海", e: "具有重要的航运价值。" },
+                { g: [4,5,6], q: "“北回归线”穿过中国的哪些省区？", o: ["滇、桂、粤、台", "闽、粤、桂、琼", "藏、云、贵、川"], a: "滇、桂、粤、台", e: "自西向东经过云南、广西、广东、台湾。" }
+            ],
+            '历史': [
+                // 1-3年级 (30+)
+                { g: [1,2,3], q: "传说中教人耕种的是？", o: ["神农氏", "黄帝", "大禹"], a: "神农氏", e: "神农尝百草，教民稼穑。" },
+                { g: [1,2,3], q: "端午节是为了纪念谁？", o: ["屈原", "李白", "孔子"], a: "屈原", e: "战国时期的楚国诗人。" },
+                { g: [1,2,3], q: "传说中“大禹治水”治的是什么水？", o: ["洪水", "海水", "井水"], a: "洪水", e: "远古时期的特大洪水。" },
+                { g: [1,2,3], q: "中国传统节日中，哪个节日要吃饺子？", o: ["春节", "中秋节", "端午节"], a: "春节", e: "北方地区最重要的习俗之一。" },
+                { g: [1,2,3], q: "发明造纸术的人是？", o: ["蔡伦", "张衡", "祖冲之"], a: "蔡伦", e: "东汉时期改进了造纸术。" },
+                { g: [1,2,3], q: "传说中谁补了天？", o: ["女娲", "嫦娥", "精卫"], a: "女娲", e: "神话故事：女娲补天。" },
+                { g: [1,2,3], q: "古代书写在什么上面？", o: ["竹简", "电脑", "纸张(发明前)"], a: "竹简", e: "在纸发明前，常用竹片或木片。" },
+                { g: [1,2,3], q: "“四大发明”不包括？", o: ["风筝", "指南针", "火药"], a: "风筝", e: "四大发明：造纸、印刷、指南针、火药。" },
+                { g: [1,2,3], q: "被称为“诗仙”的诗人是？", o: ["李白", "杜甫", "白居易"], a: "李白", e: "唐代伟大的浪漫主义诗人。" },
+                { g: [1,2,3], q: "中秋节是为了纪念？", o: ["嫦娥奔月", "牛郎织女", "屈原投江"], a: "嫦娥奔月", e: "传统的神话传说。" },
+                { g: [1,2,3], q: "“空城计”是哪部名著里的故事？", o: ["《三国演义》", "《水浒传》", "《西游记》"], a: "《三国演义》", e: "诸葛亮的智慧。" },
+                { g: [1,2,3], q: "被称为“药王”的是？", o: ["孙思邈", "李时珍", "华佗"], a: "孙思邈", e: "唐代著名医学家。" },
+                { g: [1,2,3], q: "“凿壁偷光”的故事说的是谁？", o: ["匡衡", "祖逖", "车胤"], a: "匡衡", e: "形容勤奋好学。" },
+                { g: [1,2,3], q: "“卧薪尝胆”的是谁？", o: ["勾践", "夫差", "曹操"], a: "勾践", e: "越王勾践励精图治。" },
+                { g: [1,2,3], q: "“完璧归赵”的故事与谁有关？", o: ["蔺相如", "廉颇", "荆轲"], a: "蔺相如", e: "出使秦国，保全了和氏璧。" },
+                { g: [1,2,3], q: "传说中“精卫填海”填的是什么？", o: ["大海", "西湖", "长江"], a: "大海", e: "神话故事，象征意志坚定。" },
+                { g: [1,2,3], q: "“孔融让梨”的故事告诉我们要？", o: ["尊老爱幼", "多吃水果", "不挑食"], a: "尊老爱幼", e: "孔融四岁就懂得谦让。" },
+                { g: [1,2,3], q: "古代的“文房四宝”是指？", o: ["笔墨纸砚", "琴棋书画", "经史子集"], a: "笔墨纸砚", e: "中国传统文书工具。" },
+                { g: [1,2,3], q: "“七夕节”与哪个传说有关？", o: ["牛郎织女", "孟姜女", "白蛇传"], a: "牛郎织女", e: "中国的情人节。" },
+                { g: [1,2,3], q: "“孟母三迁”是为了？", o: ["给孩子好的环境", "房子漏水", "躲避战乱"], a: "给孩子好的环境", e: "环境对人的成长很重要。" },
+                { g: [1,2,3], q: "“司马光砸缸”救的是谁？", o: ["小伙伴", "小鱼", "小鸟"], a: "小伙伴", e: "展现了司马光的机智。" },
+                { g: [1,2,3], q: "传说中“后羿射日”射掉了几个太阳？", o: ["9个", "1个", "10个"], a: "9个", e: "留下一个太阳为大地提供光热。" },
+                { g: [1,2,3], q: "古代“丝绸之路”的主要货物是？", o: ["丝绸", "瓷器", "茶叶"], a: "丝绸", e: "丝绸是当时中国最著名的出口品。" },
+                { g: [1,2,3], q: "“重阳节”有哪项习俗？", o: ["登高", "赛龙舟", "赏花灯"], a: "登高", e: "农历九月初九，寓意步步高升。" },
+                { g: [1,2,3], q: "古代的“科举考试”是为了？", o: ["选拔官员", "好玩", "增加收入"], a: "选拔官员", e: "中国古代的人才选拔制度。" },
+                
+                // 4-6年级 (30+)
+                { g: [4,5,6], q: "万里长城主要是为了防御谁？", o: ["匈奴", "倭寇", "外星人"], a: "匈奴", e: "秦朝修筑长城以抵御北方游牧民族。" },
+                { g: [4,5,6], q: "三国时期“鞠躬尽瘁”的人是？", o: ["诸葛亮", "曹操", "刘备"], a: "诸葛亮", e: "蜀汉丞相诸葛亮。" },
+                { g: [4,5,6], q: "中国第一个皇帝是？", o: ["秦始皇", "汉武帝", "唐太宗"], a: "秦始皇", e: "秦始皇统一六国。" },
+                { g: [4,5,6], q: "开创“开元盛世”的皇帝是？", o: ["唐玄宗", "唐太宗", "汉武帝"], a: "唐玄宗", e: "唐朝的全盛时期。" },
+                { g: [4,5,6], q: "“丝绸之路”的起点是？", o: ["长安", "洛阳", "广州"], a: "长安", e: "现西安，是古代贸易的枢纽。" },
+                { g: [4,5,6], q: "下列哪项发明是用于航海的？", o: ["指南针", "地动仪", "浑天仪"], a: "指南针", e: "帮助确定航行方向。" },
+                { g: [4,5,6], q: "《史记》的作者是？", o: ["司马迁", "司马光", "班固"], a: "司马迁", e: "中国第一部纪传体通史。" },
+                { g: [4,5,6], q: "北宋时期的毕昇发明了？", o: ["活字印刷术", "雕版印刷术", "造纸术"], a: "活字印刷术", e: "极大地促进了文化传播。" },
+                { g: [4,5,6], q: "郑和下西洋最远到达了哪里？", o: ["非洲东海岸", "美洲", "澳大利亚"], a: "非洲东海岸", e: "明代伟大的航海壮举。" },
+                { g: [4,5,6], q: "明长城的东起端是？", o: ["山海关", "嘉峪关", "居庸关"], a: "山海关", e: "被称为“天下第一关”。" },
+                { g: [4,5,6], q: "“贞观之治”是谁在位期间？", o: ["唐太宗", "武则天", "唐玄宗"], a: "唐太宗", e: "李世民的清明统治。" },
+                { g: [4,5,6], q: "“虎门销烟”的是哪位英雄？", o: ["林则徐", "关天培", "邓世昌"], a: "林则徐", e: "展现了中华民族抵御外辱的决心。" },
+                { g: [4,5,6], q: "“大李杜”指的是李白和谁？", o: ["杜甫", "杜牧", "李商隐"], a: "杜甫", e: "唐代诗歌的两座高峰。" },
+                { g: [4,5,6], q: "被称为“圣人”的古代教育家是？", o: ["孔子", "老子", "庄子"], a: "孔子", e: "儒家学派创始人。" },
+                { g: [4,5,6], q: "清朝最后一个皇帝是？", o: ["溥仪", "光绪", "乾隆"], a: "溥仪", e: "年号宣统。" },
+                { g: [4,5,6], q: "“杯酒释兵权”的是哪位皇帝？", o: ["赵匡胤", "李世民", "朱元璋"], a: "赵匡胤", e: "宋太祖以此收回兵权。" },
+                { g: [4,5,6], q: "“三顾茅庐”请的是谁？", o: ["诸葛亮", "关羽", "庞统"], a: "诸葛亮", e: "刘备求贤若渴的故事。" },
+                { g: [4,5,6], q: "元朝的开国皇帝是？", o: ["忽必烈", "成吉思汗", "努尔哈赤"], a: "忽必烈", e: "建立了大元帝国。" },
+                { g: [4,5,6], q: "“戊戌变法”的主要领导人是？", o: ["康有为、梁启超", "孙中山", "曾国藩"], a: "康有为、梁启超", e: "晚清时期的政治改良运动。" },
+                { g: [4,5,6], q: "中国历史上唯一的女皇帝是？", o: ["武则天", "慈禧", "吕后"], a: "武则天", e: "改唐为周，统治期间社会安定。" },
+                { g: [4,5,6], q: "“岳飞”死于哪位奸臣之手？", o: ["秦桧", "蔡京", "严嵩"], a: "秦桧", e: "岳飞是南宋抗金名将。" },
+                { g: [4,5,6], q: "“玄奘”西行取经是为了去哪里？", o: ["天竺", "波斯", "罗马"], a: "天竺", e: "即现在的印度。" },
+                { g: [4,5,6], q: "“赤壁之战”的双方主要是？", o: ["孙刘联军与曹操", "曹操与袁绍", "刘备与孙权"], a: "孙刘联军与曹操", e: "确立了三国鼎立的局面。" },
+                { g: [4,5,6], q: "“郑成功”的主要功绩是？", o: ["收复台湾", "平定三藩", "抗击倭寇"], a: "收复台湾", e: "从荷兰殖民者手中收复了台湾。" },
+                { g: [4,5,6], q: "“本草纲目”的作者是？", o: ["李时珍", "华佗", "扁鹊"], a: "李时珍", e: "明代著名的医学和药学著作。" }
+            ],
+            '百科': [
+                // 1-3年级 (30+)
+                { g: [1,2,3], q: "蜜蜂采蜜是为了？", o: ["酿蜜作为食物", "好玩", "为了飞"], a: "酿蜜作为食物", e: "蜜蜂采蜜是生存本能。" },
+                { g: [1,2,3], q: "鱼呼吸用的是什么器官？", o: ["鳃", "肺", "鼻子"], a: "鳃", e: "鱼类通过鳃过滤水中的氧气。" },
+                { g: [1,2,3], q: "彩虹有几种颜色？", o: ["7种", "6种", "8种"], a: "7种", e: "赤橙黄绿青蓝紫。" },
+                { g: [1,2,3], q: "下列哪个是昆虫？", o: ["蝴蝶", "蜘蛛", "螃蟹"], a: "蝴蝶", e: "昆虫有六条腿，蜘蛛有八条。" },
+                { g: [1,2,3], q: "植物生长需要什么？", o: ["阳光和水", "只需要水", "只需要土"], a: "阳光和水", e: "阳光用于光合作用。" },
+                { g: [1,2,3], q: "壁虎断了尾巴会怎么样？", o: ["会再长出来", "会死掉", "不会长了"], a: "会再长出来", e: "这叫再生能力。" },
+                { g: [1,2,3], q: "啄木鸟被称为什么？", o: ["森林医生", "歌唱家", "建筑师"], a: "森林医生", e: "它们专门捕捉树里的害虫。" },
+                { g: [1,2,3], q: "打雷和闪电，哪个先发生？", o: ["同时发生", "先打雷", "先闪电"], a: "同时发生", e: "但光速比声速快，所以先看到闪电。" },
+                { g: [1,2,3], q: "蜻蜓点水是为了？", o: ["产卵", "喝水", "洗澡"], a: "产卵", e: "蜻蜓繁衍后代的方式。" },
+                { g: [1,2,3], q: "人体最大的器官是？", o: ["皮肤", "心脏", "肺"], a: "皮肤", e: "皮肤覆盖了全身。" },
+                { g: [1,2,3], q: "“大象”的鼻子有什么作用？", o: ["喝水、取食", "呼吸、走路", "打架、跳舞"], a: "喝水、取食", e: "大象的鼻子非常灵活。" },
+                { g: [1,2,3], q: "“萤火虫”发光是为了？", o: ["求偶、联络", "照亮路", "取暖"], a: "求偶、联络", e: "是一种特殊的信号。" },
+                { g: [1,2,3], q: "哪个星球是我们的家园？", o: ["地球", "火星", "月球"], a: "地球", e: "目前已知唯一有生命的星球。" },
+                { g: [1,2,3], q: "“骆驼”的驼峰里装的是？", o: ["脂肪", "水", "食物"], a: "脂肪", e: "用于在缺食时提供能量。" },
+                { g: [1,2,3], q: "“企鹅”生活在哪里？", o: ["南极", "北极", "赤道"], a: "南极", e: "企鹅是南极的象征。" },
+                { g: [1,2,3], q: "“蝙蝠”属于哪一类动物？", o: ["哺乳动物", "鸟类", "爬行动物"], a: "哺乳动物", e: "蝙蝠是唯一能飞的哺乳动物。" },
+                { g: [1,2,3], q: "“向日葵”的花盘会跟着什么转？", o: ["太阳", "月亮", "风"], a: "太阳", e: "具有趋光性。" },
+                { g: [1,2,3], q: "下列哪个是冷血动物？", o: ["蛇", "兔子", "猫"], a: "蛇", e: "蛇的体温会随环境变化。" },
+                { g: [1,2,3], q: "“萤火虫”在什么时候发光？", o: ["晚上", "白天", "中午"], a: "晚上", e: "黑暗中更容易看到亮光。" },
+                { g: [1,2,3], q: "“猫”在晚上能看清东西是因为？", o: ["瞳孔很大", "有手电筒", "闭着眼"], a: "瞳孔很大", e: "猫的眼睛对光线非常敏感。" },
+                { g: [1,2,3], q: "“袋鼠”在哪里育儿？", o: ["育儿袋里", "窝里", "背上"], a: "育儿袋里", e: "袋鼠是著名的有袋类动物。" },
+                { g: [1,2,3], q: "“蚂蚁”靠什么交流？", o: ["触角", "嘴巴", "腿"], a: "触角", e: "通过分泌化学物质和触角接触沟通。" },
+                { g: [1,2,3], q: "“乌龟”的壳有什么作用？", o: ["保护自己", "好玩", "遮阳"], a: "保护自己", e: "遇到危险会缩进壳里。" },
+                { g: [1,2,3], q: "“松鼠”的尾巴有什么用？", o: ["平衡和保暖", "打仗", "装饰"], a: "平衡和保暖", e: "像一把大伞。" },
+                { g: [1,2,3], q: "“猫头鹰”睡觉的时间通常是？", o: ["白天", "晚上", "中午"], a: "白天", e: "它们是夜行性动物。" },
+                
+                // 4-6年级 (30+)
+                { g: [4,5,6], q: "声音在什么中不能传播？", o: ["真空", "水", "空气"], a: "真空", e: "声音传播需要介质。" },
+                { g: [4,5,6], q: "最大的哺乳动物是？", o: ["蓝鲸", "大象", "长颈鹿"], a: "蓝鲸", e: "蓝鲸是目前地球上最大的动物。" },
+                { g: [4,5,6], q: "地球自转一周的时间大约是？", o: ["24小时", "365天", "12小时"], a: "24小时", e: "自转产生昼夜交替。" },
+                { g: [4,5,6], q: "太阳系中离太阳最近的行星是？", o: ["水星", "金星", "地球"], a: "水星", e: "水、金、地、火、木、土、天王、海王。" },
+                { g: [4,5,6], q: "被称为“生命之源”的物质是？", o: ["水", "土", "阳光"], a: "水", e: "没有水就没有生命。" },
+                { g: [4,5,6], q: "牛顿发现了什么定律？", o: ["万有引力定律", "相对论", "进化论"], a: "万有引力定律", e: "著名的苹果掉落启发了他。" },
+                { g: [4,5,6], q: "光速大约是多少？", o: ["30万公里/秒", "340米/秒", "1000公里/小时"], a: "30万公里/秒", e: "宇宙中最快的速度。" },
+                { g: [4,5,6], q: "月球是地球的？", o: ["卫星", "行星", "恒星"], a: "卫星", e: "月球绕着地球转。" },
+                { g: [4,5,6], q: "大气层中含量最多的气体是？", o: ["氮气", "氧气", "二氧化碳"], a: "氮气", e: "约占空气体积 of 78%。" },
+                { g: [4,5,6], q: "蜜蜂跳“8字舞”是为了告诉同伴？", o: ["蜜源的方向", "要下雨了", "敌人来了"], a: "蜜源的方向", e: "它们独特的沟通方式。" },
+                { g: [4,5,6], q: "“干冰”是什么物质的固体形式？", o: ["二氧化碳", "水", "氮气"], a: "二氧化碳", e: "常用于人工降雨和保鲜。" },
+                { g: [4,5,6], q: "人体内最多的物质是？", o: ["水", "血液", "脂肪"], a: "水", e: "水约占体重的60%-70%。" },
+                { g: [4,5,6], q: "“电灯”是谁发明的？", o: ["爱迪生", "贝尔", "富兰克林"], a: "爱迪生", e: "经过数千次实验才成功。" },
+                { g: [4,5,6], q: "被称为“宇宙之王”的科学家是？", o: ["霍金", "爱英斯坦", "杨振宁"], a: "霍金", e: "提出了黑洞辐射理论。" },
+                { g: [4,5,6], q: "哪个器官负责人体的呼吸？", o: ["肺", "心脏", "胃"], a: "肺", e: "肺部进行气体交换。" },
+                { g: [4,5,6], q: "“DNA”是指？", o: ["脱氧核糖核酸", "核糖核酸", "氨基酸"], a: "脱氧核糖核酸", e: "生物的遗传物质。" },
+                { g: [4,5,6], q: "“抗生素”主要用于治疗什么引起的疾病？", o: ["细菌", "病毒", "过敏"], a: "细菌", e: "如青霉素。" },
+                { g: [4,5,6], q: "“潮汐”现象主要是受什么引力影响？", o: ["月球", "火星", "木星"], a: "月球", e: "月球引力引起海水涨落。" },
+                { g: [4,5,6], q: "“地震”的震级每增加一级，能量约增加多少倍？", o: ["32倍", "10倍", "2倍"], a: "32倍", e: "震级是衡量地震释放能量大小的标度。" },
+                { g: [4,5,6], q: "“白炽灯”发光是靠？", o: ["灯丝发热", "气体放电", "化学反应"], a: "灯丝发热", e: "电流通过灯丝产生高温发光。" },
+                { g: [4,5,6], q: "“臭氧层”的作用是？", o: ["吸收紫外线", "产生氧气", "保暖"], a: "吸收紫外线", e: "保护地球生物不受伤害。" },
+                { g: [4,5,6], q: "“哈雷彗星”大约多少年回归一次？", o: ["76年", "50年", "100年"], a: "76年", e: "著名的周期彗星。" },
+                { g: [4,5,6], q: "“计算机”的核心部件是？", o: ["CPU", "显卡", "显示器"], a: "CPU", e: "中央处理器是计算机的大脑。" },
+                { g: [4,5,6], q: "“克隆”是指？", o: ["无性繁殖", "人工授精", "基因突变"], a: "无性繁殖", e: "如克隆羊多莉。" },
+                { g: [4,5,6], q: "“纳米”是一个什么单位？", o: ["长度单位", "重量单位", "时间单位"], a: "长度单位", e: "1纳米等于十亿分之一米。" },
+                { g: [4,5,6], q: "“光年”是用来衡量什么的单位？", o: ["距离", "时间", "亮度"], a: "距离", e: "光在一年中传播的距离。" },
+                { g: [4,5,6], q: "人体内含水量最多的部分是？", o: ["大脑", "血液", "骨骼"], a: "血液", e: "血液中约有90%是水。" },
+                { g: [4,5,6], q: "第一位进入太空的中国人是？", o: ["杨利伟", "费俊龙", "翟志刚"], a: "杨利伟", e: "2003年搭乘神舟五号进入太空。" },
+                { g: [4,5,6], q: "世界上最古老的活字印刷术是由谁发明的？", o: ["毕昇", "蔡伦", "沈括"], a: "毕昇", e: "北宋时期的伟大发明。" },
+                { g: [4,5,6], q: "“植物的器官”不包括？", o: ["心脏", "根", "叶"], a: "心脏", e: "植物只有根、茎、叶、花、果实、种子。" },
+                { g: [4,5,6], q: "哪个大洲被称为“热带大陆”？", o: ["非洲", "南美洲", "大洋洲"], a: "非洲", e: "非洲大部分地区位于热带。" },
+                { g: [4,5,6], q: "声音在什么介质中传播速度最快？", o: ["固体", "液体", "气体"], a: "固体", e: "固体的分子排列更紧密。" },
+                { g: [4,5,6], q: "地球大气的最底层被称为？", o: ["对流层", "平流层", "中间层"], a: "对流层", e: "大部分天气现象发生在这里。" },
+                { g: [4,5,6], q: "人的正常体温大约是？", o: ["37摄氏度", "35摄氏度", "40摄氏度"], a: "37摄氏度", e: "约为36.5-37.2度之间。" },
+                { g: [4,5,6], q: "下列哪个是可再生资源？", o: ["太阳能", "石油", "煤炭"], a: "太阳能", e: "太阳能可以持续利用。" },
+                { g: [4,5,6], q: "电脑的“心脏”是指？", o: ["CPU", "硬盘", "主板"], a: "CPU", e: "中央处理器负责主要计算任务。" },
+                { g: [4,5,6], q: "“温室效应”主要是由哪种气体引起的？", o: ["二氧化碳", "氧气", "氢气"], a: "二氧化碳", e: "导致全球气候变暖。" },
+                { g: [4,5,6], q: "“四大发明”不包括？", o: ["地动仪", "造纸术", "指南针"], a: "地动仪", e: "四大发明是造纸、印刷、指南针、火药。" },
+                { g: [4,5,6], q: "蝙蝠是靠什么来定位猎物的？", o: ["超声波", "视力", "嗅觉"], a: "超声波", e: "回声定位系统。" }
+            ]
+        };
+
+        // --- 核心逻辑 ---
+        function render() {
+            const playArea = document.getElementById('play-area');
+            const gradeDisplay = document.getElementById('grade-display');
+            const scoreDisplay = document.getElementById('score-display');
+            const interactionText = document.getElementById('interaction-text');
+
+            scoreDisplay.innerText = state.score;
+            gradeDisplay.innerText = state.grade || '请选择年级';
+            interactionText.innerText = state.interactionMsg;
+
+            if (!state.grade) {
+                playArea.innerHTML = `
+                    <div class="text-center flex-1 flex flex-col justify-center p-3 md:p-5 animate-in zoom-in duration-500 overflow-y-auto scrollbar-hide relative">
+                        <!-- Guide Icon with MG Animation -->
+                        <div class="absolute top-4 right-4 opacity-[0.1] animate-mg">
+                            <i data-lucide="pencil" class="w-12 h-12 md:w-16 md:h-16 text-indigo-500"></i>
+                        </div>
+                        <h2 class="text-xl md:text-3xl font-cartoon text-slate-800 mb-5 md:mb-8 tracking-widest relative z-10">小朋友，你是几年级呀？</h2>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-5 max-w-2xl mx-auto relative z-10">
+                            ${GRADES.map(g => `
+                                <button onclick="setGrade('${g}')" class="bubble-btn p-4 md:p-6 bg-white hover:bg-indigo-50 border-4 border-indigo-50 hover:border-indigo-100 rounded-[2rem] md:rounded-[2.5rem] transition-all group active:scale-95 shadow-md">
+                                    <div class="flex justify-center mb-2 md:mb-3">
+                                        <i data-lucide="school" class="w-7 h-7 md:w-10 md:h-10 text-slate-300 group-hover:text-indigo-500 group-hover:rotate-12 transition-all"></i>
+                                    </div>
+                                    <span class="font-cartoon text-sm md:text-xl text-slate-700 group-hover:text-indigo-800">${g}</span>
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            } else if (!state.subject) {
+                playArea.innerHTML = `
+                    <div class="text-center flex-1 flex flex-col justify-center p-3 md:p-5 animate-in fade-in duration-500 overflow-y-auto scrollbar-hide relative">
+                        <!-- Guide Icon with MG Animation -->
+                        <div class="absolute top-4 left-4 opacity-[0.1] animate-mg" style="animation-delay: -2s">
+                            <i data-lucide="book-open" class="w-12 h-12 md:w-16 md:h-16 text-emerald-500"></i>
+                        </div>
+                        <button onclick="setGrade(null)" class="text-[9px] md:text-xs font-black text-slate-400 hover:text-indigo-500 mb-3 md:mb-6 flex items-center justify-center gap-1.5 mx-auto bg-white px-4 py-2 rounded-full border-2 border-slate-100 shadow-sm transition-all hover:scale-105 active:scale-95 relative z-10">
+                            <i data-lucide="refresh-cw" class="w-3 h-3"></i> 换个年级
+                        </button>
+                        <h2 class="text-xl md:text-3xl font-cartoon text-slate-800 mb-5 md:mb-8 tracking-widest relative z-10">选择挑战科目</h2>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-5 max-w-2xl mx-auto relative z-10">
+                            ${SUBJECTS.map(s => `
+                                <button onclick="startSubject('${s.n}')" class="flex flex-col items-center group p-2.5 md:p-4 hover:bg-white/70 rounded-[2rem] transition-all">
+                                    <div class="${s.c} w-14 h-14 md:w-20 md:h-20 rounded-[1.25rem] md:rounded-[1.75rem] flex items-center justify-center text-white shadow-lg group-hover:-translate-y-3 group-hover:rotate-6 transition-all duration-500">
+                                        <i data-lucide="${s.i}" class="w-7 h-7 md:w-10 md:h-10"></i>
+                                    </div>
+                                    <span class="mt-2 md:mt-4 font-cartoon text-xs md:text-lg text-slate-700">${s.n}</span>
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            } else {
+                playArea.innerHTML = `
+                    <div class="flex flex-col h-full overflow-hidden relative">
+                        <!-- Guide Icon with MG Animation - Background -->
+                        <div class="absolute bottom-6 right-6 opacity-[0.05] animate-mg pointer-events-none">
+                            <i data-lucide="sparkles" class="w-24 h-24 md:w-32 md:h-32 text-indigo-500"></i>
+                        </div>
+                        
+                        <!-- Quiz Header - Floating Pill -->
+                        <div class="bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 p-2 md:p-4 text-white flex justify-between items-center rounded-full shadow-2xl mx-3 mt-3 md:mx-6 md:mt-5 flex-shrink-0 border-4 border-white/30 relative z-10">
+                            <button onclick="setSubject(null)" class="w-8 h-8 md:w-11 md:h-11 flex items-center justify-center hover:bg-white/20 rounded-full transition-all active:scale-90">
+                                <i data-lucide="chevron-left" class="w-4 h-4 md:w-6 md:h-6"></i>
+                            </button>
+                            <div class="text-center">
+                                <span class="text-[9px] md:text-sm font-black opacity-95 uppercase tracking-[0.2em] md:tracking-[0.3em] font-cartoon">${state.subject} 大冒险</span>
+                                <div class="flex gap-1 md:gap-1.5 mt-1 md:mt-2">
+                                    ${Array.from({length:10}).map((_, i) => `
+                                        <div class="h-1 w-2.5 md:w-6 rounded-full ${i < state.qCount ? 'bg-amber-300 shadow-[0_0_8px_rgba(252,211,77,0.8)]' : 'bg-white/20'} transition-all duration-700"></div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <div class="text-[8px] md:text-xs font-black bg-white/20 px-2.5 py-1 rounded-full border border-white/20">${state.qCount}/10</div>
+                        </div>
+
+                        <!-- Quiz Content -->
+                        <div class="flex-1 p-3 md:p-6 pb-4 md:pb-8 flex flex-col items-center justify-start min-h-0 overflow-y-auto scrollbar-hide relative z-10">
+                            <div class="bg-white w-full p-3 md:p-5 rounded-[1.5rem] md:rounded-[2.5rem] mb-3 md:mb-5 text-center border-4 border-indigo-50 shadow-sm relative overflow-visible flex-shrink-0">
+                                <div class="absolute -top-2.5 -left-2.5 w-8 h-8 md:w-11 md:h-11 bg-amber-400 rounded-xl flex items-center justify-center shadow-lg rotate-[-15deg] border-4 border-white">
+                                    <i data-lucide="lightbulb" class="text-white w-4 h-4 md:w-6 md:h-6"></i>
+                                </div>
+                                <h3 class="text-sm md:text-xl font-cartoon text-slate-800 leading-relaxed tracking-wide">${state.currentQuestion.question}</h3>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 gap-2 md:gap-3.5 w-full max-w-xl flex-shrink-0">
+                                ${state.currentQuestion.options.map(opt => {
+                                    const isAnswer = opt === state.currentQuestion.answer;
+                                    const isUserPick = opt === state.selectedOption;
+                                    let cls = "bg-white border-2 md:border-4 border-slate-50 text-slate-700 hover:border-indigo-100 hover:bg-indigo-50/40";
+                                    if (state.showExplanation) {
+                                        if (isAnswer) cls = "bg-emerald-50 border-emerald-300 text-emerald-600 ring-2 md:ring-4 ring-emerald-50";
+                                        else if (isUserPick) cls = "bg-rose-50 border-rose-300 text-rose-500 animate-shake";
+                                        else cls = "opacity-40 scale-95 shadow-none";
+                                    }
+                                    return `
+                                        <button onclick="handleOption(this.getAttribute('data-opt'))" data-opt="${opt.replace(/"/g, '&quot;')}" ${state.showExplanation ? 'disabled' : ''} class="bubble-btn p-2.5 md:p-3.5 rounded-full font-cartoon text-xs md:text-lg transition-all flex justify-between items-center ${cls}">
+                                            <span class="pl-4 md:pl-7">${opt}</span>
+                                            <div class="pr-2 md:pr-3">
+                                                ${state.showExplanation && isAnswer ? '<i data-lucide="check-circle-2" class="text-emerald-500 w-4 h-4 md:w-7 md:h-7"></i>' : (state.showExplanation && isUserPick ? '<i data-lucide="x-circle" class="text-rose-400 w-4 h-4 md:w-7 md:h-7"></i>' : '')}
+                                            </div>
+                                        </button>
+                                    `;
+                                }).join('')}
+                            </div>
+
+                            <!-- Explanation Box - Cute Bubble -->
+                            ${state.showExplanation ? `
+                                <div class="mt-3 md:mt-4 p-3 md:p-4 bg-white/95 border-2 md:border-4 border-indigo-100 text-slate-800 rounded-[1.5rem] md:rounded-[2rem] w-full max-w-xl flex flex-col md:flex-row items-center justify-between shadow-xl gap-2 md:gap-4 animate-in slide-in-from-bottom-3 duration-700 flex-shrink-0 relative">
+                                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                                        <div class="bg-amber-100 p-1.5 rounded-xl text-amber-600 shadow-md rotate-12 flex-shrink-0 border-2 border-white">
+                                            <i data-lucide="sparkles" class="w-4 h-4 md:w-6 md:h-6"></i>
+                                        </div>
+                                        <div class="min-w-0 text-left">
+                                            <p class="text-[7px] md:text-[9px] font-black uppercase text-amber-500 mb-0.5 tracking-[0.1em] font-cartoon">智慧锦囊</p>
+                                            <p class="font-bold text-[9px] md:text-sm italic text-slate-600 leading-tight">${state.currentQuestion.explanation}</p>
+                                        </div>
+                                    </div>
+                                    <button onclick="nextQuestion()" class="bg-gradient-to-r from-indigo-500 to-blue-500 px-5 md:px-7 py-2 md:py-3 rounded-full font-cartoon text-[10px] md:text-base text-white hover:scale-110 active:scale-90 shadow-lg whitespace-nowrap flex items-center gap-1.5 md:gap-2 transition-all flex-shrink-0 border-2 md:border-4 border-white/20">
+                                        ${state.selectedOption === state.currentQuestion.answer ? '下一题' : '再试一次'} <i data-lucide="arrow-right" class="w-3.5 h-3.5 md:w-5 md:h-5"></i>
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+            // 每次渲染后重新生成图标
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // --- 交互函数 ---
+        window.updateInteractionMsg = (type) => {
+            const msgs = INTERACTIVE_TEXTS[type];
+            state.interactionMsg = msgs[Math.floor(Math.random() * msgs.length)];
+        };
+
+        window.setGrade = (g) => { 
+            state.grade = g; 
+            if (g) updateInteractionMsg('start');
+            render(); 
+        };
+        
+        window.setSubject = (s) => { state.subject = s; render(); };
+        
+        window.startSubject = (s) => {
+            state.subject = s;
+            state.qCount = 1;
+            state.score = 0;
+            state.askedQuestions = []; // 重置本轮题目记录
+            state.currentQuestion = generateQuestion();
+            state.askedQuestions.push(state.currentQuestion.question); // 记录第一题
+            state.showExplanation = false;
+            state.selectedOption = null;
+            state.interactionMsg = "挑战开始，看你的咯！🚀";
+            addMsg(`开启【${state.grade}${s}】闯关！期待你的表现哦！💪`);
+            render();
+        };
+
+        window.handleOption = (opt) => {
+            state.selectedOption = opt;
+            state.showExplanation = true;
+            if (opt === state.currentQuestion.answer) {
+                state.score += 10;
+                updateInteractionMsg('correct');
+                if (window.confetti) window.confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+                addMsg(`太牛了！完全正确！积分 +10 🎊`);
+            } else {
+                updateInteractionMsg('wrong');
+                addMsg(`没关系，看下解析，下次一定能对！加油！`);
+            }
+            render();
+        };
+
+        window.nextQuestion = () => {
+            if (state.selectedOption !== state.currentQuestion.answer) {
+                state.showExplanation = false;
+                state.selectedOption = null;
+                state.interactionMsg = "再挑战一次，一定行！✨";
+            } else if (state.qCount >= 10) {
+                state.interactionMsg = "大获全胜！你是智慧星！🏆";
+                addMsg(`本轮挑战完成！总得分：${state.score} 🏆`);
+                state.subject = null;
+            } else {
+                state.qCount++;
+                // 根据题目进度更新互动文字
+                if (state.qCount === 5) updateInteractionMsg('middle');
+                else if (state.qCount === 9) updateInteractionMsg('nearEnd');
+                else state.interactionMsg = `第 ${state.qCount} 题，继续加油！`;
+                
+                state.currentQuestion = generateQuestion();
+                state.askedQuestions.push(state.currentQuestion.question); // 记录新出的题目
+                state.showExplanation = false;
+                state.selectedOption = null;
+            }
+            render();
+        };
+
+        function generateQuestion() {
+            const gLevel = GRADES.indexOf(state.grade) + 1;
+            
+            if (state.subject === '数学') {
+                let q, a, e;
+                // 对于数学，即使是随机生成的，也防止在同一轮出现一模一样的算式
+                let attempts = 0;
+                do {
+                    if (gLevel <= 2) {
+                        const n1 = Math.floor(Math.random() * 50) + 1;
+                        const n2 = Math.floor(Math.random() * 50) + 1;
+                        const isAdd = Math.random() > 0.5;
+                        q = isAdd ? `${n1} + ${n2} = ?` : `${Math.max(n1, n2)} - ${Math.min(n1, n2)} = ?`;
+                        a = isAdd ? n1 + n2 : Math.max(n1, n2) - Math.min(n1, n2);
+                        e = `口算技巧：把数字拆开算，比如 ${n1}+${n2} 等于 ${a}。`;
+                    } else if (gLevel <= 4) {
+                        const n1 = Math.floor(Math.random() * 20) + 2;
+                        const n2 = Math.floor(Math.random() * 12) + 2;
+                        const isMul = Math.random() > 0.4;
+                        if (isMul) {
+                            q = `${n1} × ${n2} = ?`; a = n1 * n2;
+                            e = `乘法计算：${n1}乘以${n2}等于${a}。`;
+                        } else {
+                            const res = n1 * n2;
+                            q = `${res} ÷ ${n2} = ?`; a = n1;
+                            e = `除法是乘法的逆运算：因为 ${n1}×${n2}=${res}，所以 ${res}÷${n2}=${n1}。`;
+                        }
+                    } else {
+                        // 高年级增加分数/简易方程概念
+                        const type = Math.random();
+                        if (type < 0.4) {
+                            const n1 = Math.floor(Math.random() * 100) + 20;
+                            const n2 = Math.floor(Math.random() * 15) + 3;
+                            q = `${n1} ÷ ${n2} 的余数是？`; a = n1 % n2;
+                            e = `余数计算：${n1}除以${n2}，余数是${a}。`;
+                        } else if (type < 0.7) {
+                            const x = Math.floor(Math.random() * 20) + 5;
+                            const b = Math.floor(Math.random() * 30) + 10;
+                            const res = x + b;
+                            q = `如果 x + ${b} = ${res}，那么 x = ?`; a = x;
+                            e = `解方程：x = ${res} - ${b} = ${x}。`;
+                        } else {
+                            const x = Math.floor(Math.random() * 10) + 2;
+                            const y = Math.floor(Math.random() * 5) + 1;
+                            q = `2x - ${y} = ${2*x-y}，x = ?`; a = x;
+                            e = `先移项：2x = ${2*x-y} + ${y} = ${2*x}，再除以2得 x = ${x}。`;
+                        }
+                    }
+                    attempts++;
+                } while (state.askedQuestions.includes(q) && attempts < 20);
+
+                const ansStr = String(a);
+                const options = new Set([ansStr]);
+                while(options.size < 3) {
+                    const offset = Math.floor(Math.random() * 10) + 1;
+                    const val = a + (Math.random() > 0.5 ? offset : -offset);
+                    if (val >= 0) options.add(String(val));
+                }
+                return {
+                    question: q,
+                    options: Array.from(options).sort(() => Math.random() - 0.5),
+                    answer: ansStr,
+                    explanation: e
+                };
+            }
+
+            const subjectPool = QUESTION_BANK[state.subject] || QUESTION_BANK['语文'];
+            
+            // 严格按年级段筛选，确保低年级和高年级题目完全隔离
+            let pool;
+            if (gLevel <= 2) {
+                // 1-2年级
+                pool = subjectPool.filter(item => item.g.some(g => g <= 2));
+            } else if (gLevel <= 4) {
+                // 3-4年级
+                pool = subjectPool.filter(item => item.g.some(g => g >= 3 && g <= 4));
+            } else {
+                // 5-6年级
+                pool = subjectPool.filter(item => item.g.some(g => g >= 5));
+            }
+
+            // 如果该年级段题目不足（防御性），则向上或向下寻找最接近的题目，但绝不跨越低/高年级鸿沟
+            if (pool.length === 0) {
+                pool = subjectPool; // 最后的保底
+            }
+
+            // 过滤掉本轮已经出现过的题目
+            let availablePool = pool.filter(item => !state.askedQuestions.includes(item.q));
+            
+            // 如果可用题目库为空（本轮题目已出完），则重置记录
+            if (availablePool.length === 0) {
+                state.askedQuestions = [];
+                availablePool = pool;
+            }
+
+            const picked = availablePool[Math.floor(Math.random() * availablePool.length)];
+            
+            // 确保答案一定在选项中（防御性编程）
+            const finalOptions = picked.o.includes(picked.a) ? picked.o : [...picked.o, picked.a].slice(0, 3);
+
+            return {
+                question: picked.q,
+                options: [...finalOptions].sort(() => Math.random() - 0.5),
+                answer: picked.a,
+                explanation: picked.e
+            };
+        }
+
+        function addMsg(text, sender = 'ai') {
+            const chat = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'} animate-in ${sender === 'user' ? 'slide-in-from-right-2' : 'slide-in-from-left-2'}`;
+            
+            if (sender === 'user') {
+                div.innerHTML = `<div class="p-4 rounded-[1.5rem] text-sm font-bold bg-gradient-to-r from-indigo-600 to-blue-500 text-white rounded-tr-none shadow-lg leading-relaxed max-w-[85%]">${text}</div>`;
+            } else {
+                div.innerHTML = `<div class="p-4 rounded-[1.5rem] text-sm font-bold bg-white text-slate-700 rounded-tl-none border border-teal-50 shadow-md leading-relaxed max-w-[85%]">${text}</div>`;
+            }
+            
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+            return div;
+        }
+
+        async function getAiResponse(text) {
+            const input = text.toLowerCase();
+            
+            // 简单数学计算识别
+            if (/\d+[\+\-\*\/]\d+/.test(input)) {
+                try {
+                    const result = eval(input.match(/\d+[\+\-\*\/]\d+/)[0]);
+                    return `我算出来啦！结果是 ${result}。数学真有趣，对吧？🔢`;
+                } catch(e) {}
+            }
+
+            if (input.includes("数学")) return "数学是宇宙的语言！掌握了加减乘除，你就能解开世界的秘密。📐 想做道数学题吗？";
+            if (input.includes("语文") || input.includes("诗")) return "古诗词里藏着绝美的风景。比如“大漠孤烟直”，多有画面感呀！📖 你最喜欢哪首诗？";
+            if (input.includes("英语") || input.includes("单词")) return "English is a window to the world! 我们可以从简单的单词开始练习。想知道“天才”怎么说吗？是 Genius 哦！🔤";
+            if (input.includes("你是谁") || input.includes("名字")) return "我是你的 AI 助学精灵！你可以叫我“小灵”，我会一直在这里陪你学习闯关。🧚‍♂️";
+            if (input.includes("地理")) return "从珠穆朗玛峰到马里亚纳海沟，地球真的太奇妙了！🌍 你想了解哪里？";
+            if (input.includes("历史")) return "历史记录了人类的成长。想听听三国演义里诸葛亮的故事吗？那是智慧的化身！🏹";
+            if (input.includes("太难") || input.includes("不会")) return "别灰心！爱迪生发明电灯还失败了上千次呢。每一次错误都是进步的机会！💪";
+            if (input.includes("你好") || input.includes("哈喽")) return "你好呀！聪明的勇士！今天我们要征服哪个知识领地？✨";
+            
+            const randomEncouragement = [
+                "你说得真有道理！我们要保持好奇心。🚀",
+                "哇，你的想法很有趣！继续加油！💡",
+                "我一直在听哦，让我们一起变得更强吧！🌊",
+                "学习是一场奇妙的旅行，我会一直陪着你。🔍",
+                "只要每天进步一点点，你就是最棒的！🌟"
+            ];
+            return randomEncouragement[Math.floor(Math.random() * randomEncouragement.length)];
+        }
+
+        document.getElementById('chat-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            // 添加用户消息
+            addMsg(text, 'user');
+            input.value = '';
+            
+            // 添加“思考中”状态
+            const loadingDiv = addMsg('<span class="inline-flex gap-2"><span class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></span><span class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.2s]"></span><span class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.4s]"></span></span>');
+            
+            const response = await getAiResponse(text);
+            
+            setTimeout(() => {
+                loadingDiv.remove();
+                addMsg(response);
+            }, 800 + Math.random() * 1000);
+        };
+
+        // 初始化渲染
+        window.addEventListener('resize', () => {
+            let vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        });
+        window.dispatchEvent(new Event('resize'));
+        render();
+    </script>
+</body>
+</html>
