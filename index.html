@@ -399,24 +399,24 @@
     </header>
 
     <!-- Main Container -->
-    <main class="max-w-7xl w-full mx-auto flex flex-col flex-1 min-h-0 overflow-visible pb-20 lg:pb-8 px-2 lg:p-0">
+    <main class="max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 flex-1 min-h-0 overflow-visible pb-20 lg:pb-8 px-2 lg:p-0">
         
-        <!-- Play Area - Full width, full height -->
-        <div id="play-area" class="w-full flex-1 bg-white/95 backdrop-blur-md rounded-[2rem] lg:rounded-[4rem] shadow-[0_25px_60px_rgba(0,0,0,0.08)] flex flex-col min-h-0 overflow-hidden border-4 border-white relative">
+        <!-- Play Area - Full width on mobile, 8 cols on desktop -->
+        <div id="play-area" class="w-full lg:col-span-8 bg-white/95 backdrop-blur-md rounded-[2rem] lg:rounded-[4rem] shadow-[0_25px_60px_rgba(0,0,0,0.08)] flex flex-col min-h-0 overflow-hidden border-4 border-white relative">
             <!-- Content injected by JS -->
         </div>
 
-        <!-- Collapsible AI Chat - Hidden by default on mobile -->
-        <div id="ai-chat-drawer" class="fixed bottom-0 left-0 right-0 lg:relative lg:bottom-auto lg:left-auto lg:right-auto lg:block lg:w-full lg:col-span-4 lg:h-full transition-all duration-300 z-50 translate-y-full lg:translate-y-0">
-            <!-- Toggle Button -->
-            <button onclick="toggleChat()" class="lg:hidden absolute -top-14 left-1/2 -translate-x-1/2 bg-gradient-to-r from-indigo-600 to-blue-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
+        <!-- Collapsible AI Chat - Only collapsible on mobile, sidebar on desktop -->
+        <div id="ai-chat-drawer" class="lg:col-span-4 lg:h-full transition-all duration-300 z-50">
+            <!-- Toggle Button - Mobile only -->
+            <button onclick="toggleChat()" class="lg:hidden w-full bg-gradient-to-r from-indigo-600 to-blue-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center justify-center gap-2 mb-2">
                 <i data-lucide="message-circle" class="w-5 h-5"></i>
                 <span class="font-cartoon text-sm">AI助学精灵</span>
                 <i data-lucide="chevron-up" id="chat-toggle-icon" class="w-4 h-4 rotate-180"></i>
             </button>
             
-            <div class="bg-white lg:bg-transparent lg:p-0 h-64 lg:h-full flex flex-col min-h-0 rounded-t-[2rem] lg:rounded-[2rem] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] lg:shadow-[0_25px_60px_rgba(0,0,0,0.08)] border-4 border-white">
-                <div class="mesh-gradient rounded-t-[1.5rem] lg:rounded-[4rem] flex flex-col min-h-0 overflow-hidden border-4 border-white relative h-full">
+            <div class="h-64 lg:h-full flex flex-col min-h-0 rounded-[2rem] lg:rounded-[4rem] shadow-[0_25px_60px_rgba(0,0,0,0.08)] border-4 border-white bg-white">
+                <div class="mesh-gradient rounded-[1.5rem] lg:rounded-[4rem] flex flex-col min-h-0 overflow-hidden border-4 border-white relative h-full">
                 <!-- Guide Icon with MG Animation - Background -->
                 <div class="absolute bottom-10 left-10 opacity-[0.08] animate-mg pointer-events-none">
                     <i data-lucide="message-circle" class="w-24 h-24 md:w-32 md:h-32 text-indigo-400"></i>
@@ -457,16 +457,14 @@
         function toggleChat() {
             const drawer = document.getElementById('ai-chat-drawer');
             const icon = document.getElementById('chat-toggle-icon');
-            const isExpanded = drawer.classList.contains('translate-y-0');
+            const chatPanel = drawer.querySelector(':scope > div');
             
-            if (isExpanded) {
-                drawer.classList.add('translate-y-full', 'lg:translate-y-0');
-                drawer.classList.remove('translate-y-0');
-                icon.classList.remove('rotate-180');
-            } else {
-                drawer.classList.remove('translate-y-full', 'lg:translate-y-0');
-                drawer.classList.add('translate-y-0');
+            if (chatPanel.classList.contains('hidden')) {
+                chatPanel.classList.remove('hidden');
                 icon.classList.add('rotate-180');
+            } else {
+                chatPanel.classList.add('hidden');
+                icon.classList.remove('rotate-180');
             }
         }
         </script>
