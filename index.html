@@ -406,16 +406,16 @@
             <!-- Content injected by JS -->
         </div>
 
-        <!-- Sidebar AI Chat - Mobile: below play area, Desktop: side -->
-        <div class="w-full lg:col-span-4 h-64 lg:h-full flex flex-col min-h-0">
-            <div class="flex-1 mesh-gradient rounded-[2rem] lg:rounded-[4rem] shadow-[0_25px_60px_rgba(0,0,0,0.08)] flex flex-col min-h-0 overflow-hidden border-4 border-white relative">
+        <!-- Sidebar AI Chat - Mobile: smaller, Desktop: side -->
+        <div class="w-full lg:col-span-4 h-48 lg:h-full flex flex-col min-h-0">
+            <div class="flex-1 mesh-gradient rounded-[1.5rem] lg:rounded-[4rem] shadow-[0_15px_40px_rgba(0,0,0,0.06)] flex flex-col min-h-0 overflow-hidden border-4 border-white relative">
                 <!-- Guide Icon with MG Animation - Background -->
                 <div class="absolute bottom-10 left-10 opacity-[0.08] animate-mg pointer-events-none">
                     <i data-lucide="message-circle" class="w-24 h-24 md:w-32 md:h-32 text-indigo-400"></i>
                 </div>
                 
-                <div class="p-6 flex items-center gap-5 border-b border-teal-100/30 bg-white/60 backdrop-blur-md relative z-10">
-                    <div class="w-12 h-12 bg-gradient-to-tr from-indigo-600 to-blue-400 rounded-2xl flex items-center justify-center text-white shadow-lg rotate-3">
+                <div class="p-3 lg:p-6 flex items-center gap-3 lg:gap-5 border-b border-teal-100/30 bg-white/60 backdrop-blur-md relative z-10">
+                    <div class="w-10 lg:w-12 h-10 lg:h-12 bg-gradient-to-tr from-indigo-600 to-blue-400 rounded-xl lg:rounded-2xl flex items-center justify-center text-white shadow-lg rotate-3">
                         <i data-lucide="bot" class="w-7 h-7"></i>
                     </div>
                     <div>
@@ -426,14 +426,14 @@
                         </span>
                     </div>
                 </div>
-                <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-5 scrollbar-hide">
+                <div id="chat-messages" class="flex-1 overflow-y-auto p-3 lg:p-6 space-y-3 lg:space-y-5 scrollbar-hide">
                     <div class="flex justify-start">
                         <div class="p-4 px-6 rounded-[2rem] text-sm font-bold bg-white text-slate-700 rounded-tl-none border border-teal-50 shadow-sm leading-relaxed max-w-[90%]">
                             你好呀！我是你的AI助学伙伴。准备好挑战了吗？先选一下年级吧！✨
                         </div>
                     </div>
                 </div>
-                <div class="px-6 pb-14 pt-4 bg-white/60 backdrop-blur-2xl border-t border-teal-100/20">
+                <div class="px-3 lg:px-6 pb-6 lg:pb-14 pt-2 lg:pt-4 bg-white/60 backdrop-blur-2xl border-t border-teal-100/20">
                     <form id="chat-form" class="flex gap-3">
                         <input type="text" id="chat-input" placeholder="想问什么都可以哦..." class="flex-1 bg-white border-2 border-indigo-50 text-slate-700 px-6 py-3.5 rounded-full outline-none focus:border-indigo-300 text-sm font-bold shadow-inner transition-all">
                         <button type="submit" class="bg-gradient-to-r from-indigo-600 to-blue-500 text-white w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg hover:scale-110 active:scale-90 transition-all">
