@@ -1235,7 +1235,7 @@
                 `;
             } else if (!state.subject) {
                 playArea.innerHTML = `
-                    <div class="text-center flex-1 flex flex-col justify-center p-3 md:p-5 animate-in fade-in duration-500 overflow-y-auto scrollbar-hide relative">
+                    <div class="h-full flex flex-col items-center justify-center p-3 md:p-5 animate-in fade-in duration-500 overflow-y-auto scrollbar-hide relative">
                         <!-- Guide Icon with MG Animation -->
                         <div class="absolute top-4 left-4 opacity-[0.1] animate-mg" style="animation-delay: -2s">
                             <i data-lucide="book-open" class="w-12 h-12 md:w-16 md:h-16 text-emerald-500"></i>
@@ -1530,6 +1530,12 @@
 
         // 返回科目选择页面
         function returnToSubjectSelection() {
+            // 关闭胜利覆盖层
+            const overlay = document.getElementById('victory-overlay');
+            if (overlay) {
+                overlay.remove();
+            }
+            
             // 重置状态
             state.subject = null;
             state.score = 0;
