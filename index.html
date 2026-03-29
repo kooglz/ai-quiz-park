@@ -645,10 +645,30 @@
             }
         };
         
-        // 初始化音频系统（页面加载后）
-        document.addEventListener('DOMContentLoaded', async () => {
-            await audioSystem.init();
-            // 添加音频控制按钮到页面
+        // 音频系统初始化标志
+        let audioInitialized = false;
+        
+        // 初始化音频系统（首次用户交互后）
+        async function initAudio() {
+            if (audioInitialized) return;
+            try {
+                await audioSystem.init();
+                audioInitialized = true;
+                // 自动播放背景音乐
+                audioSystem.playBGM();
+                // 更新按钮状态
+                const btn = document.getElementById('audio-control-btn');
+                if (btn) {
+                    btn.innerHTML = '<i data-lucide="volume-2" class="w-5 h-5 text-indigo-500"></i>';
+                    lucide.createIcons();
+                }
+            } catch (e) {
+                console.log('音频初始化失败:', e);
+            }
+        }
+        
+        // 页面加载后添加音频控制按钮（但不自动初始化）
+        document.addEventListener('DOMContentLoaded', () => {
             addAudioControlButton();
         });
         
@@ -657,8 +677,14 @@
             const btn = document.createElement('button');
             btn.id = 'audio-control-btn';
             btn.className = 'fixed bottom-4 right-4 w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border-2 border-indigo-100 flex items-center justify-center z-50 transition-all hover:scale-110 active:scale-95';
-            btn.innerHTML = '<i data-lucide="volume-2" class="w-5 h-5 text-indigo-500"></i>';
-            btn.onclick = () => {
+            btn.innerHTML = '<i data-lucide="volume-x" class="w-5 h-5 text-slate-400"></i>';
+            btn.onclick = async () => {
+                // 首次点击时初始化音频
+                if (!audioInitialized) {
+                    await initAudio();
+                    return;
+                }
+                // 切换播放状态
                 if (audioSystem.isPlaying) {
                     audioSystem.stopBGM();
                     btn.innerHTML = '<i data-lucide="volume-x" class="w-5 h-5 text-slate-400"></i>';
@@ -670,6 +696,16 @@
             };
             document.body.appendChild(btn);
         }
+        
+        // 监听首次用户交互（点击、触摸）来初始化音频
+        const initAudioOnFirstInteraction = async () => {
+            await initAudio();
+            // 移除监听器，只执行一次
+            document.removeEventListener('click', initAudioOnFirstInteraction);
+            document.removeEventListener('touchstart', initAudioOnFirstInteraction);
+        };
+        document.addEventListener('click', initAudioOnFirstInteraction);
+        document.addEventListener('touchstart', initAudioOnFirstInteraction);
 
         const GRADES = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级'];
         const SUBJECTS = [
