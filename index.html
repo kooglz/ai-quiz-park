@@ -13,6 +13,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Tone.js for game audio -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         /* 字体优化：优先加载系统圆体字族 */
         body { 
@@ -490,6 +492,184 @@
             interactionMsg: "准备好开始冒险了吗？",
             askedQuestions: [] // 记录当前轮次已出的题目
         };
+
+        // --- 音频系统 (Tone.js) ---
+        let audioSystem = {
+            bgm: null,
+            isPlaying: false,
+            synth: null,
+            polySynth: null,
+            
+            // 初始化音频系统
+            init: async function() {
+                await Tone.start();
+                
+                // 创建主合成器
+                this.synth = new Tone.Synth({
+                    oscillator: { type: "triangle" },
+                    envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 }
+                }).toDestination();
+                
+                // 创建复音合成器（用于和弦）
+                this.polySynth = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { type: "sine" },
+                    envelope: { attack: 0.05, decay: 0.2, sustain: 0.4, release: 0.8 }
+                }).toDestination();
+                this.polySynth.volume.value = -12;
+                
+                // 创建背景音乐循环
+                this.createBGM();
+            },
+            
+            // 创建可爱的背景音乐
+            createBGM: function() {
+                const melody = [
+                    { time: "0:0", note: "C5", duration: "8n" },
+                    { time: "0:1", note: "E5", duration: "8n" },
+                    { time: "0:2", note: "G5", duration: "8n" },
+                    { time: "0:3", note: "C6", duration: "8n" },
+                    { time: "1:0", note: "G5", duration: "8n" },
+                    { time: "1:1", note: "E5", duration: "8n" },
+                    { time: "1:2", note: "D5", duration: "8n" },
+                    { time: "1:3", note: "C5", duration: "8n" },
+                    { time: "2:0", note: "A4", duration: "8n" },
+                    { time: "2:1", note: "C5", duration: "8n" },
+                    { time: "2:2", note: "E5", duration: "8n" },
+                    { time: "2:3", note: "A5", duration: "8n" },
+                    { time: "3:0", note: "G5", duration: "4n" },
+                    { time: "3:2", note: "F5", duration: "4n" },
+                ];
+                
+                const bassLine = [
+                    { time: "0:0", note: "C4", duration: "2n" },
+                    { time: "0:2", note: "G3", duration: "2n" },
+                    { time: "1:0", note: "A3", duration: "2n" },
+                    { time: "1:2", note: "F3", duration: "2n" },
+                    { time: "2:0", note: "C4", duration: "2n" },
+                    { time: "2:2", note: "G3", duration: "2n" },
+                    { time: "3:0", note: "F3", duration: "2n" },
+                    { time: "3:2", note: "G3", duration: "2n" },
+                ];
+                
+                // 创建旋律部分
+                const melodyPart = new Tone.Part((time, value) => {
+                    this.polySynth.triggerAttackRelease(value.note, value.duration, time);
+                }, melody);
+                
+                // 创建低音部分
+                const bassPart = new Tone.Part((time, value) => {
+                    this.synth.triggerAttackRelease(value.note, value.duration, time);
+                }, bassLine);
+                
+                melodyPart.loop = true;
+                melodyPart.loopEnd = "4m";
+                bassPart.loop = true;
+                bassPart.loopEnd = "4m";
+                
+                this.bgm = { melody: melodyPart, bass: bassPart };
+            },
+            
+            // 播放背景音乐
+            playBGM: function() {
+                if (this.bgm && !this.isPlaying) {
+                    Tone.Transport.start();
+                    this.bgm.melody.start(0);
+                    this.bgm.bass.start(0);
+                    this.isPlaying = true;
+                }
+            },
+            
+            // 停止背景音乐
+            stopBGM: function() {
+                if (this.bgm) {
+                    this.bgm.melody.stop();
+                    this.bgm.bass.stop();
+                    Tone.Transport.stop();
+                    this.isPlaying = false;
+                }
+            },
+            
+            // 答题成功音效
+            playCorrect: function() {
+                if (!this.synth) return;
+                const now = Tone.now();
+                // 欢快的上升音阶
+                this.synth.triggerAttackRelease("C5", "16n", now);
+                this.synth.triggerAttackRelease("E5", "16n", now + 0.1);
+                this.synth.triggerAttackRelease("G5", "16n", now + 0.2);
+                this.synth.triggerAttackRelease("C6", "8n", now + 0.3);
+                // 添加和弦
+                this.polySynth.triggerAttackRelease(["C5", "E5", "G5"], "4n", now + 0.4);
+            },
+            
+            // 闯关成功音效（更华丽的胜利音乐）
+            playLevelComplete: function() {
+                if (!this.synth) return;
+                const now = Tone.now();
+                // 胜利号角
+                this.synth.triggerAttackRelease("C5", "8n", now);
+                this.synth.triggerAttackRelease("C5", "8n", now + 0.2);
+                this.synth.triggerAttackRelease("G5", "4n", now + 0.4);
+                this.synth.triggerAttackRelease("E5", "8n", now + 0.8);
+                this.synth.triggerAttackRelease("G5", "8n", now + 1.0);
+                this.synth.triggerAttackRelease("C6", "2n", now + 1.2);
+                // 和弦伴奏
+                this.polySynth.triggerAttackRelease(["C4", "E4", "G4"], "2n", now);
+                this.polySynth.triggerAttackRelease(["F4", "A4", "C5"], "2n", now + 0.8);
+                this.polySynth.triggerAttackRelease(["G4", "B4", "D5"], "2n", now + 1.6);
+                this.polySynth.triggerAttackRelease(["C4", "E4", "G4", "C5"], "1n", now + 2.4);
+            },
+            
+            // 答题错误音效
+            playWrong: function() {
+                if (!this.synth) return;
+                const now = Tone.now();
+                // 低沉的音效
+                this.synth.triggerAttackRelease("A3", "8n", now);
+                this.synth.triggerAttackRelease("G3", "8n", now + 0.15);
+                this.synth.triggerAttackRelease("E3", "4n", now + 0.3);
+            },
+            
+            // 按钮点击音效
+            playClick: function() {
+                if (!this.synth) return;
+                this.synth.triggerAttackRelease("G5", "32n", Tone.now());
+            },
+            
+            // 选择年级/科目音效
+            playSelect: function() {
+                if (!this.synth) return;
+                const now = Tone.now();
+                this.synth.triggerAttackRelease("E5", "16n", now);
+                this.synth.triggerAttackRelease("A5", "16n", now + 0.1);
+            }
+        };
+        
+        // 初始化音频系统（页面加载后）
+        document.addEventListener('DOMContentLoaded', async () => {
+            await audioSystem.init();
+            // 添加音频控制按钮到页面
+            addAudioControlButton();
+        });
+        
+        // 添加音频控制按钮
+        function addAudioControlButton() {
+            const btn = document.createElement('button');
+            btn.id = 'audio-control-btn';
+            btn.className = 'fixed bottom-4 right-4 w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border-2 border-indigo-100 flex items-center justify-center z-50 transition-all hover:scale-110 active:scale-95';
+            btn.innerHTML = '<i data-lucide="volume-2" class="w-5 h-5 text-indigo-500"></i>';
+            btn.onclick = () => {
+                if (audioSystem.isPlaying) {
+                    audioSystem.stopBGM();
+                    btn.innerHTML = '<i data-lucide="volume-x" class="w-5 h-5 text-slate-400"></i>';
+                } else {
+                    audioSystem.playBGM();
+                    btn.innerHTML = '<i data-lucide="volume-2" class="w-5 h-5 text-indigo-500"></i>';
+                }
+                lucide.createIcons();
+            };
+            document.body.appendChild(btn);
+        }
 
         const GRADES = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级'];
         const SUBJECTS = [
@@ -1010,11 +1190,18 @@
 
         window.setGrade = (g) => { 
             state.grade = g; 
-            if (g) updateInteractionMsg('start');
+            if (g) {
+                updateInteractionMsg('start');
+                audioSystem.playSelect(); // 播放选择音效
+            }
             render(); 
         };
         
-        window.setSubject = (s) => { state.subject = s; render(); };
+        window.setSubject = (s) => { 
+            state.subject = s; 
+            audioSystem.playClick(); // 播放点击音效
+            render(); 
+        };
         
         window.startSubject = (s) => {
             state.subject = s;
@@ -1027,6 +1214,7 @@
             state.selectedOption = null;
             state.interactionMsg = "挑战开始，看你的咯！🚀";
             addMsg(`开启【${state.grade}${s}】闯关！期待你的表现哦！💪`);
+            audioSystem.playSelect(); // 播放开始音效
             render();
         };
 
@@ -1038,9 +1226,11 @@
                 updateInteractionMsg('correct');
                 if (window.confetti) window.confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
                 addMsg(`太牛了！完全正确！积分 +10 🎊`);
+                audioSystem.playCorrect(); // 播放答题成功音效
             } else {
                 updateInteractionMsg('wrong');
                 addMsg(`没关系，看下解析，下次一定能对！加油！`);
+                audioSystem.playWrong(); // 播放错误音效
             }
             render();
         };
@@ -1050,10 +1240,12 @@
                 state.showExplanation = false;
                 state.selectedOption = null;
                 state.interactionMsg = "再挑战一次，一定行！✨";
+                audioSystem.playClick(); // 播放点击音效
             } else if (state.qCount >= 10) {
                 state.interactionMsg = "大获全胜！你是智慧星！🏆";
                 addMsg(`本轮挑战完成！总得分：${state.score} 🏆`);
                 state.subject = null;
+                audioSystem.playLevelComplete(); // 播放闯关成功音效
             } else {
                 state.qCount++;
                 // 根据题目进度更新互动文字
@@ -1065,6 +1257,7 @@
                 state.askedQuestions.push(state.currentQuestion.question); // 记录新出的题目
                 state.showExplanation = false;
                 state.selectedOption = null;
+                audioSystem.playClick(); // 播放点击音效
             }
             render();
         };
