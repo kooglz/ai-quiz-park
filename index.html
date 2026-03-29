@@ -660,6 +660,7 @@
                     this.bgm.melody.start(0);
                     this.bgm.bass.start(0);
                     this.isPlaying = true;
+                    console.log('BGM started, Transport state:', Tone.Transport.state);
                 }
             },
             
@@ -668,7 +669,9 @@
                 if (this.bgm) {
                     this.bgm.melody.stop();
                     this.bgm.bass.stop();
+                    // 不要停止 Transport，只是停止音轨
                     this.isPlaying = false;
+                    console.log('BGM stopped');
                 }
             },
             
@@ -771,20 +774,26 @@
         
         // 切换背景音乐
         async function toggleBGM() {
+            console.log('toggleBGM called, audioInitialized:', audioInitialized, 'isPlaying:', audioSystem?.isPlaying);
+            
             // 如果未初始化，先初始化
             if (!audioInitialized) {
+                console.log('Audio not initialized, initializing...');
                 await initAudio();
                 return;
             }
             
             // 切换播放状态
             if (audioSystem.isPlaying) {
+                console.log('Stopping BGM...');
                 audioSystem.stopBGM();
                 updateAudioButton(false);
             } else {
+                console.log('Starting BGM...');
                 audioSystem.playBGM();
                 updateAudioButton(true);
             }
+            console.log('Toggle complete, isPlaying:', audioSystem.isPlaying);
         }
         
         // 页面加载后添加音频控制按钮
