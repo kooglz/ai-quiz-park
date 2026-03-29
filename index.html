@@ -725,12 +725,14 @@
         }
         
         // 切换背景音乐
-        function toggleBGM() {
+        async function toggleBGM() {
+            // 如果未初始化，先初始化
             if (!audioInitialized) {
-                initAudio();
+                await initAudio();
                 return;
             }
             
+            // 切换播放状态
             if (audioSystem.isPlaying) {
                 audioSystem.stopBGM();
                 updateAudioButton(false);
@@ -751,22 +753,31 @@
             btn.id = 'audio-control-btn';
             btn.className = 'fixed bottom-4 right-4 w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border-2 border-indigo-100 flex items-center justify-center z-50 transition-all hover:scale-110 active:scale-95';
             btn.innerHTML = '<i data-lucide="volume-x" class="w-5 h-5 text-slate-400"></i>';
-            btn.onclick = toggleBGM;
+            // 使用 addEventListener 绑定点击事件
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleBGM();
+            });
             document.body.appendChild(btn);
         }
         
         // 监听首次用户交互（点击、触摸）来初始化音频
+        let firstInteractionTriggered = false;
         const initAudioOnFirstInteraction = async (e) => {
+            // 如果已经触发过，不再执行
+            if (firstInteractionTriggered) return;
             // 如果点击的是音量按钮，不在这里处理（由按钮自己的点击事件处理）
             if (e.target.closest('#audio-control-btn')) return;
             
+            firstInteractionTriggered = true;
             await initAudio();
-            // 移除监听器，只执行一次
+            // 移除监听器
             document.removeEventListener('click', initAudioOnFirstInteraction);
             document.removeEventListener('touchstart', initAudioOnFirstInteraction);
         };
-        document.addEventListener('click', initAudioOnFirstInteraction);
-        document.addEventListener('touchstart', initAudioOnFirstInteraction);
+        document.addEventListener('click', initAudioOnFirstInteraction, { passive: true });
+        document.addEventListener('touchstart', initAudioOnFirstInteraction, { passive: true });
 
         const GRADES = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级'];
         const SUBJECTS = [
