@@ -446,10 +446,10 @@
     </header>
 
     <!-- Main Container -->
-    <main class="max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 flex-1 min-h-0 overflow-visible pb-16 lg:pb-12 px-2 lg:p-0">
+    <main class="max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 flex-1 min-h-0 overflow-hidden pb-16 lg:pb-12 px-2 lg:p-0">
         
         <!-- Play Area - Full width on mobile, 8 cols on desktop -->
-        <div id="play-area" class="w-full lg:col-span-8 bg-white/95 backdrop-blur-md rounded-[2rem] lg:rounded-[4rem] shadow-[0_25px_60px_rgba(0,0,0,0.08)] flex flex-col min-h-0 overflow-hidden border-4 border-white relative">
+        <div id="play-area" class="w-full lg:col-span-8 bg-white/95 backdrop-blur-md rounded-[2rem] lg:rounded-[4rem] shadow-[0_25px_60px_rgba(0,0,0,0.08)] flex flex-col h-full min-h-0 overflow-hidden border-4 border-white relative">
             <!-- Content injected by JS -->
         </div>
 
@@ -462,8 +462,8 @@
                 <i data-lucide="chevron-up" id="chat-toggle-icon" class="w-4 h-4 rotate-180"></i>
             </button>
             
-            <div class="h-64 lg:h-full flex flex-col min-h-0 rounded-[2rem] lg:rounded-[4rem] shadow-[0_25px_60px_rgba(0,0,0,0.08)] border-4 border-white bg-white hidden lg:flex">
-                <div class="mesh-gradient rounded-[1.5rem] lg:rounded-[4rem] flex flex-col min-h-0 overflow-hidden border-4 border-white relative h-full">
+            <div class="h-64 lg:h-full flex flex-col min-h-0 max-h-full rounded-[2rem] lg:rounded-[4rem] shadow-[0_25px_60px_rgba(0,0,0,0.08)] border-4 border-white bg-white hidden lg:flex">
+                <div class="mesh-gradient rounded-[1.5rem] lg:rounded-[4rem] flex flex-col min-h-0 max-h-full overflow-hidden border-4 border-white relative h-full">
                 <!-- Guide Icon with MG Animation - Background -->
                 <div class="absolute bottom-10 left-10 opacity-[0.08] animate-mg pointer-events-none">
                     <i data-lucide="message-circle" class="w-24 h-24 md:w-32 md:h-32 text-indigo-400"></i>
@@ -1235,24 +1235,26 @@
                 `;
             } else if (!state.subject) {
                 playArea.innerHTML = `
-                    <div class="h-full flex flex-col items-center justify-center p-3 md:p-5 animate-in fade-in duration-500 overflow-y-auto scrollbar-hide relative">
+                    <div class="h-full flex flex-col p-3 md:p-5 animate-in fade-in duration-500 overflow-y-auto scrollbar-hide relative">
                         <!-- Guide Icon with MG Animation -->
                         <div class="absolute top-4 left-4 opacity-[0.1] animate-mg" style="animation-delay: -2s">
                             <i data-lucide="book-open" class="w-12 h-12 md:w-16 md:h-16 text-emerald-500"></i>
                         </div>
-                        <button onclick="setGrade(null)" class="text-[9px] md:text-xs font-black text-slate-400 hover:text-indigo-500 mb-3 md:mb-6 flex items-center justify-center gap-1.5 mx-auto bg-white px-4 py-2 rounded-full border-2 border-slate-100 shadow-sm transition-all hover:scale-105 active:scale-95 relative z-10">
-                            <i data-lucide="refresh-cw" class="w-3 h-3"></i> 换个年级
-                        </button>
-                        <h2 class="text-xl md:text-3xl font-cartoon text-slate-800 mb-5 md:mb-8 tracking-widest relative z-10">选择挑战科目</h2>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-5 max-w-2xl mx-auto relative z-10">
-                            ${SUBJECTS.map(s => `
-                                <button onclick="startSubject('${s.n}')" class="flex flex-col items-center group p-2.5 md:p-4 hover:bg-white/70 rounded-[2rem] transition-all">
-                                    <div class="${s.c} w-14 h-14 md:w-20 md:h-20 rounded-[1.25rem] md:rounded-[1.75rem] flex items-center justify-center text-white shadow-lg group-hover:-translate-y-3 group-hover:rotate-6 transition-all duration-500">
-                                        <i data-lucide="${s.i}" class="w-7 h-7 md:w-10 md:h-10"></i>
-                                    </div>
-                                    <span class="mt-2 md:mt-4 font-cartoon text-xs md:text-lg text-slate-700">${s.n}</span>
-                                </button>
-                            `).join('')}
+                        <div class="flex-1 flex flex-col items-center justify-center min-h-0">
+                            <button onclick="setGrade(null)" class="text-[9px] md:text-xs font-black text-slate-400 hover:text-indigo-500 mb-3 md:mb-6 flex items-center justify-center gap-1.5 mx-auto bg-white px-4 py-2 rounded-full border-2 border-slate-100 shadow-sm transition-all hover:scale-105 active:scale-95 relative z-10">
+                                <i data-lucide="refresh-cw" class="w-3 h-3"></i> 换个年级
+                            </button>
+                            <h2 class="text-xl md:text-3xl font-cartoon text-slate-800 mb-5 md:mb-8 tracking-widest relative z-10">选择挑战科目</h2>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-5 max-w-2xl mx-auto relative z-10">
+                                ${SUBJECTS.map(s => `
+                                    <button onclick="startSubject('${s.n}')" class="flex flex-col items-center group p-2.5 md:p-4 hover:bg-white/70 rounded-[2rem] transition-all">
+                                        <div class="${s.c} w-14 h-14 md:w-20 md:h-20 rounded-[1.25rem] md:rounded-[1.75rem] flex items-center justify-center text-white shadow-lg group-hover:-translate-y-3 group-hover:rotate-6 transition-all duration-500">
+                                            <i data-lucide="${s.i}" class="w-7 h-7 md:w-10 md:h-10"></i>
+                                        </div>
+                                        <span class="mt-2 md:mt-4 font-cartoon text-xs md:text-lg text-slate-700">${s.n}</span>
+                                    </button>
+                                `).join('')}
+                            </div>
                         </div>
                     </div>
                 `;
