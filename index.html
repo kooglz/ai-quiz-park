@@ -1302,7 +1302,7 @@
                                         else cls = "opacity-40 scale-95 shadow-none";
                                     }
                                     return `
-                                        <button onclick="if(!state.showExplanation) handleOption(this.getAttribute('data-opt'))" data-opt="${opt.replace(/"/g, '&quot;')}" ${state.showExplanation ? 'disabled' : ''} class="bubble-btn p-2.5 md:p-3.5 rounded-full font-cartoon text-xs md:text-lg transition-all flex justify-between items-center ${cls}" ${state.showExplanation ? 'style="pointer-events: none; opacity: 0.6;"' : ''}>
+                                        <button onclick="handleOption('${opt.replace(/'/g, "\\'")}')" data-opt="${opt.replace(/"/g, '&quot;')}" ${state.showExplanation ? 'disabled' : ''} class="bubble-btn p-2.5 md:p-3.5 rounded-full font-cartoon text-xs md:text-lg transition-all flex justify-between items-center ${cls}">
                                             <span class="pl-4 md:pl-7">${opt}</span>
                                             <div class="pr-2 md:pr-3">
                                                 ${state.showExplanation && isAnswer ? '<i data-lucide="check-circle-2" class="text-emerald-500 w-4 h-4 md:w-7 md:h-7"></i>' : (state.showExplanation && isUserPick ? '<i data-lucide="x-circle" class="text-rose-400 w-4 h-4 md:w-7 md:h-7"></i>' : '')}
@@ -1373,12 +1373,17 @@
             render();
         };
 
+        // 防止重复点击的标志
+        let isHandlingOption = false;
+        
         window.handleOption = (opt) => {
-            // 防止重复触发
-            if (state.showExplanation) return;
+            // 防止重复触发 - 双重检查
+            if (state.showExplanation || isHandlingOption) return;
             
+            isHandlingOption = true;
             state.selectedOption = opt;
             state.showExplanation = true;
+            
             if (opt === state.currentQuestion.answer) {
                 state.score += 10;
                 updateInteractionMsg('correct');
@@ -1390,7 +1395,11 @@
                 addMsg(`没关系，看下解析，下次一定能对！加油！`);
                 audioSystem.playWrong(); // 播放错误音效
             }
+            
             render();
+            
+            // 重置标志
+            setTimeout(() => { isHandlingOption = false; }, 500);
         };
 
         window.nextQuestion = () => {
