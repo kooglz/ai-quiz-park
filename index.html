@@ -650,6 +650,8 @@
             // 播放背景音乐
             playBGM: function() {
                 if (this.bgm) {
+                    console.log('playBGM called, Transport state:', Tone.Transport.state);
+                    
                     // 确保 Transport 处于正确状态
                     if (Tone.Transport.state !== 'started') {
                         Tone.Transport.start();
@@ -657,35 +659,30 @@
                     }
                     
                     // 停止当前播放
-                    try {
-                        this.bgm.melody.stop();
-                        this.bgm.bass.stop();
-                    } catch(e) {
-                        console.log('Stop error (ignored):', e);
-                    }
+                    this.bgm.melody.stop();
+                    this.bgm.bass.stop();
                     
-                    // 延迟一点再启动，确保停止完成
-                    setTimeout(() => {
-                        try {
-                            this.bgm.melody.start(0);
-                            this.bgm.bass.start(0);
-                            this.isPlaying = true;
-                            console.log('BGM started successfully');
-                        } catch(e) {
-                            console.error('Start error:', e);
-                        }
-                    }, 50);
+                    // 关键：重新设置 loop 和位置
+                    Tone.Transport.position = 0;
+                    Tone.Transport.seconds = 0;
+                    
+                    // 重新启动旋律和低音
+                    this.bgm.melody.start(0);
+                    this.bgm.bass.start(0);
+                    
+                    this.isPlaying = true;
+                    console.log('BGM started, position:', Tone.Transport.position);
                 }
             },
             
             // 停止背景音乐
             stopBGM: function() {
                 if (this.bgm) {
+                    console.log('stopBGM called');
                     this.bgm.melody.stop();
                     this.bgm.bass.stop();
-                    // 不要停止 Transport，只是停止音轨
                     this.isPlaying = false;
-                    console.log('BGM stopped');
+                    console.log('BGM stopped, position:', Tone.Transport.position);
                 }
             },
             
