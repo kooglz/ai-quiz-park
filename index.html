@@ -649,6 +649,11 @@
             
             // 播放背景音乐
             playBGM: function() {
+                if (!this.bgm) {
+                    console.log('BGM not created, creating...');
+                    this.createBGM();
+                }
+                
                 if (this.bgm) {
                     console.log('playBGM called, Transport state:', Tone.Transport.state);
                     
@@ -658,15 +663,10 @@
                         console.log('Transport started');
                     }
                     
-                    // 停止当前播放
-                    this.bgm.melody.stop();
-                    this.bgm.bass.stop();
+                    // 取消静音
+                    Tone.Destination.mute = false;
                     
-                    // 关键：重新设置 loop 和位置
-                    Tone.Transport.position = 0;
-                    Tone.Transport.seconds = 0;
-                    
-                    // 重新启动旋律和低音
+                    // 启动旋律和低音
                     this.bgm.melody.start(0);
                     this.bgm.bass.start(0);
                     
@@ -679,10 +679,10 @@
             stopBGM: function() {
                 if (this.bgm) {
                     console.log('stopBGM called');
-                    this.bgm.melody.stop();
-                    this.bgm.bass.stop();
+                    // 使用静音而不是停止，这样可以避免重新启动的问题
+                    Tone.Destination.mute = true;
                     this.isPlaying = false;
-                    console.log('BGM stopped, position:', Tone.Transport.position);
+                    console.log('BGM muted');
                 }
             },
             
