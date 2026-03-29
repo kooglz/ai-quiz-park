@@ -654,13 +654,20 @@
                     if (Tone.Transport.state !== 'started') {
                         Tone.Transport.start();
                     }
-                    // 重新启动旋律和低音
+                    
+                    // 停止当前播放（如果正在播放）
                     this.bgm.melody.stop();
                     this.bgm.bass.stop();
+                    
+                    // 重新启动 Transport 位置
+                    Tone.Transport.position = 0;
+                    
+                    // 重新启动旋律和低音
                     this.bgm.melody.start(0);
                     this.bgm.bass.start(0);
+                    
                     this.isPlaying = true;
-                    console.log('BGM started, Transport state:', Tone.Transport.state);
+                    console.log('BGM started, Transport state:', Tone.Transport.state, 'position:', Tone.Transport.position);
                 }
             },
             
