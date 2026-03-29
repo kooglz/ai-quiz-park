@@ -1373,34 +1373,41 @@
             render();
         };
 
-        // 防止重复点击的标志
-        let isHandlingOption = false;
-        
-        window.handleOption = (opt) => {
-            // 防止重复触发 - 双重检查
-            if (state.showExplanation || isHandlingOption) return;
+        window.handleOption = (function() {
+            let isProcessing = false;
             
-            isHandlingOption = true;
-            state.selectedOption = opt;
-            state.showExplanation = true;
-            
-            if (opt === state.currentQuestion.answer) {
-                state.score += 10;
-                updateInteractionMsg('correct');
-                if (window.confetti) window.confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
-                addMsg(`太牛了！完全正确！积分 +10 🎊`);
-                audioSystem.playCorrect(); // 播放答题成功音效
-            } else {
-                updateInteractionMsg('wrong');
-                addMsg(`没关系，看下解析，下次一定能对！加油！`);
-                audioSystem.playWrong(); // 播放错误音效
-            }
-            
-            render();
-            
-            // 重置标志
-            setTimeout(() => { isHandlingOption = false; }, 500);
-        };
+            return function(opt) {
+                // 严格防止重复触发
+                if (isProcessing || state.showExplanation) {
+                    console.log('Already processing, skipping...');
+                    return;
+                }
+                
+                isProcessing = true;
+                console.log('Processing option:', opt);
+                
+                state.selectedOption = opt;
+                state.showExplanation = true;
+                
+                if (opt === state.currentQuestion.answer) {
+                    state.score += 10;
+                    updateInteractionMsg('correct');
+                    if (window.confetti) window.confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+                    addMsg(`太牛了！完全正确！积分 +10 🎊`);
+                    audioSystem.playCorrect(); // 播放答题成功音效
+                } else {
+                    updateInteractionMsg('wrong');
+                    addMsg(`没关系，看下解析，下次一定能对！加油！`);
+                    audioSystem.playWrong(); // 播放错误音效
+                }
+                
+                // 强制重新渲染
+                requestAnimationFrame(() => {
+                    render();
+                    console.log('Render completed, showExplanation:', state.showExplanation);
+                });
+            };
+        })();
 
         window.nextQuestion = () => {
             if (state.selectedOption !== state.currentQuestion.answer) {
