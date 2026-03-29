@@ -1405,6 +1405,7 @@
                 requestAnimationFrame(() => {
                     render();
                     console.log('Render completed, showExplanation:', state.showExplanation);
+                    isProcessing = false;
                 });
             };
         })();
@@ -1686,7 +1687,7 @@
             const chat = document.getElementById('chat-messages');
             
             // 如果消息太多，删除旧的消息（保留最新的MAX_MESSAGES条）
-            const messages = chat.querySelectorAll(':scope > div');
+            let messages = chat.querySelectorAll(':scope > div');
             while (messages.length >= MAX_MESSAGES) {
                 chat.removeChild(messages[0]);
                 messages = chat.querySelectorAll(':scope > div');
