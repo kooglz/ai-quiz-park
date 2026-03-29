@@ -515,7 +515,10 @@
                     oscillator: { type: "sine" },
                     envelope: { attack: 0.05, decay: 0.2, sustain: 0.4, release: 0.8 }
                 }).toDestination();
-                this.polySynth.volume.value = -12;
+                this.polySynth.volume.value = -15;
+                
+                // 设置主合成器音量（音效用）
+                this.synth.volume.value = -5;
                 
                 // 创建背景音乐循环
                 this.createBGM();
@@ -601,8 +604,14 @@
             
             // 播放背景音乐
             playBGM: function() {
-                if (this.bgm && !this.isPlaying) {
-                    Tone.Transport.start();
+                if (this.bgm) {
+                    // 确保 Transport 处于正确状态
+                    if (Tone.Transport.state !== 'started') {
+                        Tone.Transport.start();
+                    }
+                    // 重新启动旋律和低音
+                    this.bgm.melody.stop();
+                    this.bgm.bass.stop();
                     this.bgm.melody.start(0);
                     this.bgm.bass.start(0);
                     this.isPlaying = true;
@@ -614,7 +623,6 @@
                 if (this.bgm) {
                     this.bgm.melody.stop();
                     this.bgm.bass.stop();
-                    Tone.Transport.stop();
                     this.isPlaying = false;
                 }
             },
@@ -697,17 +705,42 @@
                 // 自动播放背景音乐
                 audioSystem.playBGM();
                 // 更新按钮状态
-                const btn = document.getElementById('audio-control-btn');
-                if (btn) {
-                    btn.innerHTML = '<i data-lucide="volume-2" class="w-5 h-5 text-indigo-500"></i>';
-                    lucide.createIcons();
-                }
+                updateAudioButton(true);
             } catch (e) {
                 console.log('音频初始化失败:', e);
             }
         }
         
-        // 页面加载后添加音频控制按钮（但不自动初始化）
+        // 更新音频按钮状态
+        function updateAudioButton(isPlaying) {
+            const btn = document.getElementById('audio-control-btn');
+            if (btn) {
+                if (isPlaying) {
+                    btn.innerHTML = '<i data-lucide="volume-2" class="w-5 h-5 text-indigo-500"></i>';
+                } else {
+                    btn.innerHTML = '<i data-lucide="volume-x" class="w-5 h-5 text-slate-400"></i>';
+                }
+                lucide.createIcons();
+            }
+        }
+        
+        // 切换背景音乐
+        function toggleBGM() {
+            if (!audioInitialized) {
+                initAudio();
+                return;
+            }
+            
+            if (audioSystem.isPlaying) {
+                audioSystem.stopBGM();
+                updateAudioButton(false);
+            } else {
+                audioSystem.playBGM();
+                updateAudioButton(true);
+            }
+        }
+        
+        // 页面加载后添加音频控制按钮
         document.addEventListener('DOMContentLoaded', () => {
             addAudioControlButton();
         });
@@ -718,27 +751,15 @@
             btn.id = 'audio-control-btn';
             btn.className = 'fixed bottom-4 right-4 w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border-2 border-indigo-100 flex items-center justify-center z-50 transition-all hover:scale-110 active:scale-95';
             btn.innerHTML = '<i data-lucide="volume-x" class="w-5 h-5 text-slate-400"></i>';
-            btn.onclick = async () => {
-                // 首次点击时初始化音频
-                if (!audioInitialized) {
-                    await initAudio();
-                    return;
-                }
-                // 切换播放状态
-                if (audioSystem.isPlaying) {
-                    audioSystem.stopBGM();
-                    btn.innerHTML = '<i data-lucide="volume-x" class="w-5 h-5 text-slate-400"></i>';
-                } else {
-                    audioSystem.playBGM();
-                    btn.innerHTML = '<i data-lucide="volume-2" class="w-5 h-5 text-indigo-500"></i>';
-                }
-                lucide.createIcons();
-            };
+            btn.onclick = toggleBGM;
             document.body.appendChild(btn);
         }
         
         // 监听首次用户交互（点击、触摸）来初始化音频
-        const initAudioOnFirstInteraction = async () => {
+        const initAudioOnFirstInteraction = async (e) => {
+            // 如果点击的是音量按钮，不在这里处理（由按钮自己的点击事件处理）
+            if (e.target.closest('#audio-control-btn')) return;
+            
             await initAudio();
             // 移除监听器，只执行一次
             document.removeEventListener('click', initAudioOnFirstInteraction);
